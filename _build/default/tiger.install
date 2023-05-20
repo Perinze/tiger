@@ -1,0 +1,8 @@
+lib: [
+  "_build/install/default/lib/tiger/META"
+  "_build/install/default/lib/tiger/dune-package"
+  "_build/install/default/lib/tiger/opam"
+]
+bin: [
+  "_build/install/default/bin/tiger"
+]
