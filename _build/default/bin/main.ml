@@ -5,6 +5,7 @@ type binop = Plus | Minus | Times | Div
 type stm = CompoundStm of stm * stm
          | AssignStm of id * exp
          | PrintStm of exp list
+(*       | EnvDebugStm *)
 
  and exp = IdExp of id
          | NumExp of int
@@ -13,12 +14,14 @@ type stm = CompoundStm of stm * stm
 
 type env = (id * int) list
 
+(*
 let rec fmt_env (env : env) : string=
   match env with
   | (id, value) :: rest ->
     let s = Printf.sprintf "%s -> %d,\n" id value in
     s ^ fmt_env rest
   | [] -> ""
+*)
 
 let prog : stm = 
   CompoundStm(AssignStm("a", OpExp(NumExp 5, Plus, NumExp 3)),
@@ -36,6 +39,7 @@ let rec maxargs (stm : stm) : int =
     | PrintStm args ->
         let lst = (List.length args) :: (List.map helper args) in
           List.fold_left max (List.hd lst) lst
+(*  | EnvDebugStm -> 0 *)
 and helper (exp : exp) : int =
   match exp with
     | OpExp (a, _, b) -> max (helper a) (helper b)
@@ -64,11 +68,15 @@ and interp_stm (env : env) (stm : stm) : env =
       env1
     in
     List.fold_left helper env arg
+  
+(*| EnvDebugStm ->
+    env |> fmt_env |> print_string;
+    env *)
 
 and interp_exp (env : env) (exp : exp) : int * env =
   match exp with
   | IdExp id ->
-    let binding = List.find (fun pair -> fst pair == id) env in
+    let binding = List.find (fun pair -> fst pair = id) env in
     (snd binding, env)
 
   | NumExp x -> (x, env)
@@ -87,11 +95,6 @@ and interp_exp (env : env) (exp : exp) : int * env =
     let env1 = interp_stm env stm in
     interp_exp env1 e
 
-let test =
-  CompoundStm(AssignStm("a", OpExp(NumExp 5, Plus, NumExp 3)),
-              PrintStm[IdExp"a"])
-
 let () =
   let _ = maxargs prog in ();
-  interp_stm [] test |> fmt_env |> print_string;
   interp prog;

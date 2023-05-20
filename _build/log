@@ -1,9 +1,9 @@
 # dune exec tiger
 # OCAMLPARAM: unset
 # Shared cache: disabled
-# Workspace root: /home/perinze/Documents/code/ocaml/tiger
-# Auto-detected concurrency: 4
-$ /usr/bin/ocamlc.opt -config > /tmp/dune_f7bded_output
+# Workspace root: /home/perinze/code/ocaml/tiger
+# Auto-detected concurrency: 12
+$ /usr/bin/ocamlc.opt -config > /tmp/dune_89c13d_output
 # Dune context:
 #  { name = "default"
 #  ; kind = "default"
@@ -12,30 +12,29 @@ $ /usr/bin/ocamlc.opt -config > /tmp/dune_f7bded_output
 #  ; for_host = None
 #  ; fdo_target_exe = None
 #  ; build_dir = In_build_dir "default"
-#  ; toplevel_path = Some External "/home/perinze/.opam/default/lib/toplevel"
+#  ; toplevel_path = Some External "/home/perinze/.opam/4.14.0/lib/toplevel"
 #  ; ocaml_bin = External "/usr/bin"
-#  ; ocaml = Ok External "/home/perinze/.opam/default/bin/ocaml"
+#  ; ocaml = Ok External "/home/perinze/.opam/4.14.0/bin/ocaml"
 #  ; ocamlc = External "/usr/bin/ocamlc.opt"
 #  ; ocamlopt = Ok External "/usr/bin/ocamlopt.opt"
 #  ; ocamldep = Ok External "/usr/bin/ocamldep.opt"
 #  ; ocamlmklib = Ok External "/usr/bin/ocamlmklib.opt"
 #  ; env =
 #      map
-#        { "DUNE_OCAML_HARDCODED" : "/home/perinze/.opam/default/lib"
+#        { "DUNE_OCAML_HARDCODED" : "/home/perinze/.opam/4.14.0/lib"
 #        ; "DUNE_OCAML_STDLIB" : "/usr/lib/ocaml"
-#        ; "DUNE_SOURCEROOT" : "/home/perinze/Documents/code/ocaml/tiger"
-#        ; "INSIDE_DUNE" :
-#            "/home/perinze/Documents/code/ocaml/tiger/_build/default"
+#        ; "DUNE_SOURCEROOT" : "/home/perinze/code/ocaml/tiger"
+#        ; "INSIDE_DUNE" : "/home/perinze/code/ocaml/tiger/_build/default"
 #        ; "OCAMLFIND_IGNORE_DUPS_IN" :
-#            "/home/perinze/Documents/code/ocaml/tiger/_build/install/default/lib"
+#            "/home/perinze/code/ocaml/tiger/_build/install/default/lib"
 #        ; "OCAMLPATH" :
-#            "/home/perinze/Documents/code/ocaml/tiger/_build/install/default/lib"
+#            "/home/perinze/code/ocaml/tiger/_build/install/default/lib"
 #        ; "OCAMLTOP_INCLUDE_PATH" :
-#            "/home/perinze/Documents/code/ocaml/tiger/_build/install/default/lib/toplevel"
+#            "/home/perinze/code/ocaml/tiger/_build/install/default/lib/toplevel"
 #        ; "OCAML_COLOR" : "always"
 #        ; "OPAMCOLOR" : "always"
 #        }
-#  ; findlib_paths = [ External "/home/perinze/.opam/default/lib" ]
+#  ; findlib_paths = [ External "/home/perinze/.opam/4.14.0/lib" ]
 #  ; arch_sixtyfour = true
 #  ; natdynlink_supported = true
 #  ; supports_shared_libraries = true
