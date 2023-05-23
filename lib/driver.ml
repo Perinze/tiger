@@ -1,3 +1,5 @@
+exception LoopBreak
+
 let driver(): Token.token list =
   let lst = ref [] in
     try
@@ -6,6 +8,6 @@ let driver(): Token.token list =
         let result = Lexer.token lexbuf in
           lst := !lst @ [result]
       done;
-      !lst
+      raise LoopBreak
     with Lexer.Eof ->
       !lst
