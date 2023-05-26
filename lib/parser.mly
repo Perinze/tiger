@@ -20,8 +20,8 @@
 %left TIMES DIVIDE
 %nonassoc UMINUS
 
-%start program
-%type <int> program
+%start parse
+%type <unit> parse
 
 %%
 program:
