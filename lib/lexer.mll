@@ -1,6 +1,5 @@
 {
 open Token
-exception Eof
 }
 let letter = ['_' 'a'-'z' 'A'-'Z']
 let digit = ['0'-'9']
@@ -25,7 +24,7 @@ rule token = parse
   | "array"         { ARRAY }
   | ":="            { ASSIGN }
   | "|"             { OR }
-  | "&"            { AND }
+  | "&"             { AND }
   | ">="            { GE }
   | ">"             { GT }
   | "<="            { LE }
@@ -52,4 +51,4 @@ rule token = parse
                     { INT (int_of_string lxm) }
   | letter (letter|digit)* as lxm
                     { ID lxm }
-  | eof             { raise Eof }
+  | eof             { EOF }
