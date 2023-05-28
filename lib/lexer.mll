@@ -1,5 +1,4 @@
 {
-open Token
 }
 let letter = ['_' 'a'-'z' 'A'-'Z']
 let digit = ['0'-'9']
