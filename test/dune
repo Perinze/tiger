@@ -1,2 +1,5 @@
-(test
- (name tiger))
+(library
+ (name yacc_test)
+ (libraries base stdio)
+ (inline_tests)
+ (preprocess (pps ppx_inline_test ppx_assert)))

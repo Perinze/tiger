@@ -110,7 +110,7 @@ record_creation:
   | ID LBRACE field_assign RBRACE {}
 ;
 field_assign:
-    ID EQ exp {} {}
+    ID EQ exp {}
   | ID EQ exp COMMA field_assign {}
 ;
 
