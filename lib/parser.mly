@@ -14,6 +14,7 @@
 %token BREAK NIL
 %token FUNCTION VAR TYPE
 
+%left ASSIGN /* ? */
 %left AND OR
 %left EQ NEQ LT LE GT GE
 %left PLUS MINUS
@@ -103,6 +104,21 @@ params:
   | params COMMA exp {}
 ;
 
+/* type-id {id=exp{, id=exp}} */
+record_creation:
+    ID LBRACE RBRACE {}
+  | ID LBRACE field_assign RBRACE {}
+;
+field_assign:
+    ID EQ exp {} {}
+  | ID EQ exp COMMA field_assign {}
+;
+
+/* type-id [exp1] of exp2 */
+array_creation:
+    ID LBRACK exp RBRACK OF exp {}
+;
+
 exp:
     lvalue {}
   | NIL {}
@@ -114,5 +130,26 @@ exp:
   | MINUS exp %prec UMINUS {}
   | ID LPAREN RPAREN {}
   | ID LPAREN params RPAREN {}
+  | exp PLUS exp {}
+  | exp MINUS exp {}
+  | exp TIMES exp {}
+  | exp DIVIDE exp {}
+  | exp EQ exp {}
+  | exp NEQ exp {}
+  | exp GT exp {}
+  | exp LT exp {}
+  | exp GE exp {}
+  | exp LE exp {}
+  | exp AND exp {}
+  | exp OR exp {}
+  | record_creation {}
+  | array_creation {}
+  | lvalue ASSIGN exp {}
+  | IF exp THEN exp ELSE exp {}
+  | IF exp THEN exp {}
+  | WHILE exp DO exp {}
+  | FOR ID ASSIGN exp TO exp DO exp {}
+  | BREAK {}
   | LET decs IN exp END {}
+  | LPAREN exp RPAREN {}
 ;
