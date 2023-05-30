@@ -28,7 +28,7 @@
 
 %%
 parse:
-    decs EOF {}
+    exp EOF {}
 ;
 
 /* DECLARATIONS */
@@ -125,6 +125,7 @@ exp:
   | LPAREN seq RPAREN {}
   | LPAREN RPAREN {}
   | LET decs IN END {}
+  | ID {}
   | INT {}
   | STRING {}
   | MINUS exp %prec UMINUS {}
