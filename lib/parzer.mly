@@ -1,4 +1,4 @@
-/* File parser.mly */
+/* File parzer.mly */
 %token EOF
 %token <string> ID
 %token <int> INT
@@ -14,7 +14,9 @@
 %token BREAK NIL
 %token FUNCTION VAR TYPE
 
-%left ASSIGN /* ? */
+%nonassoc DO THEN OF
+%nonassoc ELSE
+%nonassoc ASSIGN
 %left AND OR
 %left EQ NEQ LT LE GT GE
 %left PLUS MINUS
@@ -23,8 +25,6 @@
 
 %start parse
 %type <unit> parse
-
-%token TYDEC VARDEC FUNDEC
 
 %%
 parse:
@@ -61,11 +61,10 @@ ty:
  *          -> id: type-id {, id: type-id} */
 tyfields:
     /* empty */ {}
-  | tyfield {}
-  | tyfield COMMA tyfields {}
+  | ID COLON ID tyfields_ {}
 ;
-tyfield:
-    ID COLON ID {}
+tyfields_:
+    COMMA ID COLON ID tyfields_{}
 ;
 
 /* VARIABLES */
@@ -125,7 +124,6 @@ exp:
   | LPAREN seq RPAREN {}
   | LPAREN RPAREN {}
   | LET decs IN END {}
-  | ID {}
   | INT {}
   | STRING {}
   | MINUS exp %prec UMINUS {}
@@ -143,8 +141,8 @@ exp:
   | exp LE exp {}
   | exp AND exp {}
   | exp OR exp {}
-  | record_creation {}
   | array_creation {}
+  | record_creation {}
   | lvalue ASSIGN exp {}
   | IF exp THEN exp ELSE exp {}
   | IF exp THEN exp {}

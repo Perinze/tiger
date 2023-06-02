@@ -1,7 +1,7 @@
 open Base
 
 let parse (prog: string) =
-  Parser.parse Lexer.token
+  Parzer.parse Lexer.token
     (Lexing.from_string prog)
 
 let parse_produce_unit (prog: string) =

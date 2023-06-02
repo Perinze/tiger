@@ -1,7 +1,6 @@
 (library
  (name tiger)
- (public_name tiger)
  (inline_tests)
  (preprocess (pps ppx_inline_test)))
 (ocamllex lexer)
-(ocamlyacc parser)
+(ocamlyacc parzer)
