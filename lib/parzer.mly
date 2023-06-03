@@ -64,7 +64,7 @@ tyfields:
   | ID COLON ID tyfields_ {}
 ;
 tyfields_:
-    COMMA ID COLON ID tyfields_{}
+    COMMA ID COLON ID tyfields_ {}
 ;
 
 /* VARIABLES */
@@ -87,6 +87,8 @@ fundec:
 
 lvalue:
     ID {}
+  | ID DOT ID {}
+  | ID LBRACK exp RBRACK {}
   | lvalue DOT ID {}
   | lvalue LBRACK exp RBRACK {}
 ;
