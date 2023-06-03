@@ -71,9 +71,21 @@ let%test "parser lvalue field of record" =
   parse_produce_unit
     "a.b"
 
+let%test "parser lvalue field of nested record" =
+  parse_produce_unit
+    "a.b.c.d"
+
 let%test "parser lvalue element of array" =
   parse_produce_unit
     "a[6]"
+
+let%test "parser lvalue element of 3 dimension array" =
+  parse_produce_unit
+    "a[6][7][8]"
+
+let%test "parser lvalue mixed" =
+  parse_produce_unit
+    "a.b[7].c.d[1][2].e"
 
 let%test "parser test nil" =
   parse_produce_unit "nil"
