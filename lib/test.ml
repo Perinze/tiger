@@ -31,6 +31,13 @@ let%test "parser tydec array" =
   parse_produce_unit
     "let type a = array of int in end"
 
+let%test "parser mutually recursive types" =
+  parse_produce_unit
+    "let
+      type intlist = {hd: int, tl: intlist}
+      type tree = {key: int, children: treelist}
+     in end"
+
 (* VARIABLES *)
 
 let%test "parser vardec without type" =
@@ -87,5 +94,210 @@ let%test "parser lvalue mixed" =
   parse_produce_unit
     "a.b[7].c.d[1][2].e"
 
-let%test "parser test nil" =
-  parse_produce_unit "nil"
+let%test "parser nil" =
+  parse_produce_unit
+    "nil"
+
+let%test "parser sequencing" =
+  parse_produce_unit
+    "(6; (); a.b; c[7]; a)"
+
+let%test "parser unit" =
+  parse_produce_unit
+    "()"
+
+let%test "parser let decs in end" =
+  parse_produce_unit
+    "let var a := b in end"
+
+let%test "parser integer literal" =
+  parse_produce_unit
+    "6"
+
+let%test "string literal" =
+  parse_produce_unit
+    "\"ok\""
+
+let%test "parser negation" =
+  parse_produce_unit
+    "-6"
+  
+let%test "parser function call" =
+  parse_produce_unit
+    "f()"
+
+let%test "parser function call with 1 parameter" =
+  parse_produce_unit
+    "g(6)"
+
+let%test "parser function call with 3 parameters" =
+  parse_produce_unit
+    "h(6, a, -1)"
+
+let%test "parser arithmetic" =
+  parse_produce_unit
+    "1 + 2 * 3 / 4"
+
+let%test "parser comparison" =
+  parse_produce_unit
+    "1 = 2 <> 3 > 4 < 5 >= 6 <= 7"
+
+let%test "parser boolean operators" =
+  parse_produce_unit
+    "2 & 0 | 1"
+
+let%test "parser record creation" =
+  parse_produce_unit
+    "a {}"
+
+let%test "parser record creation with 1 field" =
+  parse_produce_unit
+    "a {b = 1}"
+
+let%test "parser record creation with 3 fields" =
+  parse_produce_unit
+    "a {b = 1, c = d.e, f = g[0]}"
+
+let%test "parser array creation" =
+  parse_produce_unit
+    "a [16] of 6"
+
+let%test "parser extent" =
+  parse_produce_unit
+    "a {b = c [16] of 6,
+        j = d {e = f {g = h [1] of 0},
+           i = k}}"
+
+let%test "parser assignment to id" =
+  parse_produce_unit
+    "a := 6"
+
+let%test "parser assignment to record field" =
+  parse_produce_unit
+    "a.b := 6"
+
+let%test "parser assignment to array element" =
+  parse_produce_unit
+    "a[6] := 6"
+
+let%test "parser assignment to compound lvalue" =
+  parse_produce_unit
+    "a.b[c][f].d[0].e := 6"
+
+let%test "parser if then else" =
+  parse_produce_unit
+    "if a then b else c"
+
+let%test "parser if then" =
+  parse_produce_unit
+    "if a then 6"
+
+let%test "parser while" =
+  parse_produce_unit
+    "while a do b"
+
+let%test "parser for" =
+  parse_produce_unit
+    "for a := 0 to b do 6"
+
+let%test "parser break" =
+  parse_produce_unit
+    "while a do (b; break)"
+
+let%test "parser let decs in exp end" =
+  parse_produce_unit
+    "let type a = b var c: a := d in c end"
+
+let%test "parser parentheses" =
+  parse_produce_unit
+    "(1 + 2) * 3"
+
+let%test "parser queens.tig" =
+  parse_produce_unit "
+let
+  var N := 8
+
+  type intArray = array of int
+
+  var row := intArray [ N ] of 0
+  var col := intArray [ N ] of 0
+  var diag1 := intArray [N+N-1] of 0
+  var diag2 := intArray [N+N-1] of 0
+
+  function printboard() = (
+    for i := 0 to N-1 do (
+      for j := 0 to N-1 do
+        print(if col[i]=j then \" O\" else \" .\");
+      print(\"\\n\")
+    );
+    print(\"\\n\")
+  )
+
+  function try(c: int) =
+    if c = N then
+      printboard()
+    else
+      for r := 0 to N-1 do
+        if row[r] = 0 & diag1[r+c] = 0 & diag2[r+7-c] = 0 then (
+          row[r] := 1; diag1[r+c] := 1; diag2[r+7-c] := 1;
+          col[c] := r;
+          try(c+1);
+          row[r] := 0; diag1[r+c] := 0; diag2[r+7-c] := 0
+        )
+  
+  in try(0)
+end"
+
+let%test "parser merge.tig" =
+  parse_produce_unit "
+let
+  type any = {any: int}
+  var buffer := getchar()
+  
+  function readint(any: any): int =
+    let
+      var i := 0
+      function isdigit(s: string): int =
+        ord(buffer) >= ord(\"0\") & ord(buffer) <= ord(\"9\")
+    in
+    end
+
+  type list = {first: int, rest: list}
+
+  function readlist(): list =
+    let
+      var any := any {any = 0}
+      var i := readint(any)
+    in
+      if any.any
+        then list {first = i, rest = readlist()}
+        else (buffer := getchar(); nil)
+    end
+
+  function merge(a: list, b: list): list =
+    if a = nil then b
+    else if b = nil then a
+    else if a.first < b.first
+      then list {first = a.first, rest = merge(a.rest, b)}
+      else list {first = b.first, rest = merge(a, b.rest)}
+  
+  function printint(i: int) =
+    let
+      function f(i: int) =
+        if i > 0 then (
+          f(i / 10);
+          print(chr(i - i / 10 * 10 + ord(\"0\")))
+        )
+    in
+      if i < 0 then (print(\"-\"); f(-i))
+      else if i > 0 then f(i)
+      else print(\"0\")
+    end
+  
+  function printlist(l: list) =
+    if l = nil then print(\"\\n\")
+    else (printint(l.first); print(\" \"); printlist(l.rest))
+
+in printlist(merge(readlist(), readlist()))
+end
+"
