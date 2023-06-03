@@ -64,7 +64,8 @@ tyfields:
   | ID COLON ID tyfields_ {}
 ;
 tyfields_:
-    COMMA ID COLON ID tyfields_ {}
+    /* empty */ {}
+  | COMMA ID COLON ID tyfields_ {}
 ;
 
 /* VARIABLES */
