@@ -1,12 +1,7 @@
 type symbol = string * int
-module StringIntOrd : Map.OrderedType = struct
-  type t = string * int
-  let compare (_, a) (_, b) = compare a b
-end
 
 module H = Hashtbl
 
-exception Symbol
 let nextsym = ref 0
 let size_hint = 128
 let hashtable : (string, int) H.t
@@ -22,11 +17,12 @@ let symbol name =
 
 let name (s, _) = s
 
-module Table : Map.S
-with type key = StringIntOrd.t
-= Map.Make(StringIntOrd)
+module Table = Table.IntMapTable(struct
+  type key = symbol
+  let getInt (_, n) = n
+end)
 
-type 'a table = 'a Table.t
+type 'a table = 'a Table.table
 let empty = Table.empty
-let add = Table.add
-let find = Table.find
+let enter = Table.enter
+let look = Table.look
