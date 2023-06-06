@@ -1,4 +1,7 @@
 /* File parzer.mly */
+%{
+module A = Absyn
+%}
 %token EOF
 %token <string> ID
 %token <int> INT
@@ -123,12 +126,12 @@ array_creation:
 
 exp:
     lvalue {}
-  | NIL {}
+  | NIL { }
   | LPAREN seq RPAREN {}
   | LPAREN RPAREN {}
   | LET decs IN END {}
-  | INT {}
-  | STRING {}
+  | INT { }
+  | STRING { }
   | MINUS exp %prec UMINUS {}
   | ID LPAREN RPAREN {}
   | ID LPAREN params RPAREN {}
