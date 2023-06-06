@@ -99,14 +99,14 @@ lvalue:
 
 /* exp; exp; ...exp */
 seq:
-    exp SEMICOLON exp {}
-  | seq SEMICOLON exp {}
+    exp {}
+  | exp SEMICOLON seq {}
 ;
 
 /* exp {, exp} */
 params:
     exp {}
-  | params COMMA exp {}
+  | exp COMMA params {}
 ;
 
 /* type-id {id=exp{, id=exp}} */
@@ -147,14 +147,14 @@ exp:
   | exp LE exp {}
   | exp AND exp {}
   | exp OR exp {}
-  | array_creation {}
   | record_creation {}
+  | array_creation {}
   | lvalue ASSIGN exp {}
   | IF exp THEN exp ELSE exp {}
   | IF exp THEN exp {}
   | WHILE exp DO exp {}
   | FOR ID ASSIGN exp TO exp DO exp {}
   | BREAK {}
-  | LET decs IN exp END {}
-  | LPAREN exp RPAREN {}
+  | LET decs IN seq END {}
+/*  | LPAREN exp RPAREN {}*/
 ;
