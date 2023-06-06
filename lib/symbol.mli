@@ -6,5 +6,5 @@ val name : symbol -> string
 type 'a table
 
 val empty : 'a table
-val enter : 'a table * symbol * 'a -> 'a table
-val look : 'a table * symbol -> 'a option
+val add : symbol -> 'a -> 'a table -> 'a table
+val find : 'a table * symbol -> 'a option

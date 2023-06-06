@@ -22,9 +22,11 @@ let symbol name =
 
 let name (s, _) = s
 
-module Table = Map.Make(StringIntOrd)
+module Table : Map.S
+with type key = StringIntOrd.t
+= Map.Make(StringIntOrd)
 
 type 'a table = 'a Table.t
 let empty = Table.empty
-let enter = Table.add
-let look = Table.find
+let add = Table.add
+let find = Table.find
