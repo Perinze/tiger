@@ -9,6 +9,7 @@ type var =
 and exp =
   | VarExp of var
   | NilExp
+  | UnitExp
   | IntExp of int
   | StringExp of string * pos
   | CallExp of {func: symbol; args: exp list; pos: pos}
