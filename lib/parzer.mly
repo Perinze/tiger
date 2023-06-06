@@ -96,14 +96,14 @@ lvalue:
 
 /* exp; exp; ...exp */
 seq:
-    exp SEMICOLON exp {}
-  | seq SEMICOLON exp {}
+    exp {}
+  | exp SEMICOLON seq {}
 ;
 
 /* exp {, exp} */
 params:
     exp {}
-  | params COMMA exp {}
+  | exp COMMA params {}
 ;
 
 /* type-id {id=exp{, id=exp}} */
@@ -123,12 +123,12 @@ array_creation:
 
 exp:
     lvalue {}
-  | NIL {}
+  | NIL { }
   | LPAREN seq RPAREN {}
   | LPAREN RPAREN {}
   | LET decs IN END {}
-  | INT {}
-  | STRING {}
+  | INT { }
+  | STRING { }
   | MINUS exp %prec UMINUS {}
   | ID LPAREN RPAREN {}
   | ID LPAREN params RPAREN {}
