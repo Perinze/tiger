@@ -52,6 +52,7 @@ dec:
 
 tydec:
     TYPE ID EQ ty {}
+  | TYPE ID EQ ty tydec {}
 ;
 
 ty:
@@ -83,6 +84,8 @@ vardec:
 fundec:
     FUNCTION ID LPAREN tyfields RPAREN EQ exp {}
   | FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp {}
+  | FUNCTION ID LPAREN tyfields RPAREN EQ exp fundec {}
+  | FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp fundec {}
 ;
 
 /* VARIABLES AND EXPRESSIONS */
