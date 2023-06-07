@@ -1,4 +1,4 @@
-open Base
+(*open Base
 
 let parse (prog: string) =
   Parzer.parse Lexer.token
@@ -300,4 +300,4 @@ let
 
 in printlist(merge(readlist(), readlist()))
 end
-"
+"*)
