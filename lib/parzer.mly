@@ -214,7 +214,6 @@ array_creation:
 ;
 
 exp:
-<<<<<<< HEAD
     lvalue { VarExp $1 }
   | NIL { NilExp }
   | LPAREN seq RPAREN { SeqExp $2 }
@@ -297,6 +296,4 @@ exp:
       }
     }
   | error { error 1 "unexpected expression" }
-=======
->>>>>>> yacc
 ;
