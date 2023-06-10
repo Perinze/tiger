@@ -218,17 +218,16 @@ exp:
   | NIL { NilExp }
   | LPAREN seq RPAREN { SeqExp $2 }
   | LPAREN RPAREN { UnitExp }
-  | LPAREN error RPAREN { error 2 "sequence error" }
-  | LPAREN error { error 1 "unmatched parentheses" }
-  | error RPAREN { error 2 "unmatched parentheses" }
+  | LPAREN error RPAREN { error 2 "sequence error"; DummyExp }
+  | LPAREN error { error 1 "unmatched parentheses"; DummyExp }
+  | error RPAREN { error 2 "unmatched parentheses"; DummyExp }
   | LET decs IN END {
       LetExp {
         decs=$2; body=UnitExp;
         pos=rhs_start 1;
       }
     }
-  | LET decs IN END {}
-  | LET error IN END { error 2 "declaration error" }
+  | LET error IN END { error 2 "declaration error"; DummyExp }
   | INT { IntExp $1 }
   | STRING { StringExp ($1, rhs_start 1) }
   | MINUS exp %prec UMINUS {
@@ -247,17 +246,17 @@ exp:
         func=sym $1; args=$3; pos=rhs_start 2;
       }
     }
-  | ID LPAREN error RPAREN { error 3 "argument syntax error" }
-  | ID LPAREN error { error 2 "unmatched parentheses" }
-  | ID error RPAREN { error 3 "unmatched parentheses" }
+  | ID LPAREN error RPAREN { error 3 "argument syntax error"; DummyExp }
+  | ID LPAREN error { error 2 "unmatched parentheses"; DummyExp }
+  | ID error RPAREN { error 3 "unmatched parentheses"; DummyExp }
   | exp op exp {
       OpExp {
         left=$1; oper=$2;
         right=$3; pos=rhs_start 2;
       }
     }
-  | op exp { error 1 "missing left operand" }
-  | exp op { error 2 "missing right operand" }
+  | op exp { error 1 "missing left operand"; DummyExp }
+  | exp op { error 2 "missing right operand"; DummyExp }
   | record_creation { $1 }
   | array_creation { $1 }
   | lvalue ASSIGN exp {
@@ -265,7 +264,7 @@ exp:
         var=$1; exp=$3; pos=rhs_start 2;
       }
     }
-  | error ASSIGN exp { error 1 "lvalue error in assignment" }
+  | error ASSIGN exp { error 1 "lvalue error in assignment"; DummyExp }
   | IF exp THEN exp ELSE exp {
       IfExp {
         test=$2; then'=$4;
@@ -295,5 +294,5 @@ exp:
         decs=$2; body=SeqExp $4; pos=rhs_start 1;
       }
     }
-  | error { error 1 "unexpected expression" }
+  | error { error 1 "unexpected expression"; DummyExp }
 ;

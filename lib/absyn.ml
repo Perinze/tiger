@@ -25,6 +25,7 @@ and exp =
   | BreakExp of pos
   | LetExp of {decs: dec list; body: exp; pos: pos}
   | ArrayExp of {typ: symbol; size: exp; init: exp; pos: pos}
+  | DummyExp
 
 and dec =
   | FunctionDec of fundec list
