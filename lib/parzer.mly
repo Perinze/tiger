@@ -1,4 +1,7 @@
 /* File parzer.mly */
+%{
+  let error tokidx = Errormsg.error (rhs_start tokidx)
+%}
 %token EOF
 %token <string> ID
 %token <int> INT
@@ -109,6 +112,21 @@ params:
   | exp COMMA params {}
 ;
 
+op:
+    PLUS {}
+  | MINUS {}
+  | TIMES {}
+  | DIVIDE {}
+  | EQ {}
+  | NEQ {}
+  | GT {}
+  | LT {}
+  | GE {}
+  | LE {}
+  | AND {}
+  | OR {}
+;
+
 /* type-id {id=exp{, id=exp}} */
 record_creation:
     ID LBRACE RBRACE {}
@@ -129,32 +147,31 @@ exp:
   | NIL { }
   | LPAREN seq RPAREN {}
   | LPAREN RPAREN {}
+  | LPAREN error RPAREN { error 2 "sequence error" }
+  | LPAREN error { error 1 "unmatched parentheses" }
+  | error RPAREN { error 2 "unmatched parentheses" }
   | LET decs IN END {}
+  | LET error IN END { error 2 "declaration error" }
   | INT { }
   | STRING { }
   | MINUS exp %prec UMINUS {}
   | ID LPAREN RPAREN {}
   | ID LPAREN params RPAREN {}
-  | exp PLUS exp {}
-  | exp MINUS exp {}
-  | exp TIMES exp {}
-  | exp DIVIDE exp {}
-  | exp EQ exp {}
-  | exp NEQ exp {}
-  | exp GT exp {}
-  | exp LT exp {}
-  | exp GE exp {}
-  | exp LE exp {}
-  | exp AND exp {}
-  | exp OR exp {}
+  | ID LPAREN error RPAREN { error 3 "argument syntax error" }
+  | ID LPAREN error { error 2 "unmatched parentheses" }
+  | ID error RPAREN { error 3 "unmatched parentheses" }
+  | exp op exp {}
+  | op exp { error 1 "missing left operand" }
+  | exp op { error 2 "missing right operand" }
   | record_creation {}
   | array_creation {}
   | lvalue ASSIGN exp {}
+  | error ASSIGN exp { error 1 "lvalue error in assignment" }
   | IF exp THEN exp ELSE exp {}
   | IF exp THEN exp {}
   | WHILE exp DO exp {}
   | FOR ID ASSIGN exp TO exp DO exp {}
   | BREAK {}
   | LET decs IN seq END {}
-/*  | LPAREN exp RPAREN {}*/
+  | error { error 1 "unexpected expression" }
 ;
