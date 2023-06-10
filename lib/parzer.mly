@@ -2,6 +2,7 @@
 %{
 open Absyn
 let sym = Symbol.symbol
+let error tokidx = Errormsg.error (rhs_start tokidx)
 %}
 %token EOF
 %token <string> ID
@@ -166,6 +167,21 @@ params:
   | exp COMMA params { $1 :: $3 }
 ;
 
+op:
+    PLUS { PlusOp }
+  | MINUS { MinusOp }
+  | TIMES { TimesOp }
+  | DIVIDE { DivideOp }
+  | EQ { EqOp }
+  | NEQ { NeqOp }
+  | GT { GtOp }
+  | LT { LtOp }
+  | GE { GeOp }
+  | LE { LeOp }
+  | AND { TimesOp }
+  | OR { PlusOp }
+;
+
 /* type-id {id=exp{, id=exp}} */
 record_creation:
     ID LBRACE RBRACE {
@@ -202,12 +218,16 @@ exp:
   | NIL { NilExp }
   | LPAREN seq RPAREN { SeqExp $2 }
   | LPAREN RPAREN { UnitExp }
+  | LPAREN error RPAREN { error 2 "sequence error"; DummyExp }
+  | LPAREN error { error 1 "unmatched parentheses"; DummyExp }
+  | error RPAREN { error 2 "unmatched parentheses"; DummyExp }
   | LET decs IN END {
       LetExp {
         decs=$2; body=UnitExp;
         pos=rhs_start 1;
       }
     }
+  | LET error IN END { error 2 "declaration error"; DummyExp }
   | INT { IntExp $1 }
   | STRING { StringExp ($1, rhs_start 1) }
   | MINUS exp %prec UMINUS {
@@ -226,78 +246,17 @@ exp:
         func=sym $1; args=$3; pos=rhs_start 2;
       }
     }
-  | exp PLUS exp {
+  | ID LPAREN error RPAREN { error 3 "argument syntax error"; DummyExp }
+  | ID LPAREN error { error 2 "unmatched parentheses"; DummyExp }
+  | ID error RPAREN { error 3 "unmatched parentheses"; DummyExp }
+  | exp op exp {
       OpExp {
-        left=$1; oper=PlusOp;
+        left=$1; oper=$2;
         right=$3; pos=rhs_start 2;
       }
     }
-  | exp MINUS exp {
-      OpExp {
-        left=$1; oper=MinusOp;
-        right=$3; pos=rhs_start 2;
-      }
-    }
-  | exp TIMES exp {
-      OpExp {
-        left=$1; oper=TimesOp;
-        right=$3; pos=rhs_start 2;
-      }
-    }
-  | exp DIVIDE exp {
-      OpExp {
-        left=$1; oper=DivideOp;
-        right=$3; pos=rhs_start 2;
-      }
-    }
-  | exp EQ exp {
-      OpExp {
-        left=$1; oper=EqOp;
-        right=$3; pos=rhs_start 2;
-      }
-    }
-  | exp NEQ exp {
-      OpExp {
-        left=$1; oper=NeqOp;
-        right=$3; pos=rhs_start 2;
-      }
-    }
-  | exp GT exp {
-      OpExp {
-        left=$1; oper=GtOp;
-        right=$3; pos=rhs_start 2;
-      }
-    }
-  | exp LT exp {
-      OpExp {
-        left=$1; oper=LtOp;
-        right=$3; pos=rhs_start 2;
-      }
-    }
-  | exp GE exp {
-      OpExp {
-        left=$1; oper=GeOp;
-        right=$3; pos=rhs_start 2;
-      }
-    }
-  | exp LE exp {
-      OpExp {
-        left=$1; oper=LeOp;
-        right=$3; pos=rhs_start 2;
-      }
-    }
-  | exp AND exp {
-      OpExp {
-        left=$1; oper=TimesOp;
-        right=$3; pos=rhs_start 2;
-      }
-    }
-  | exp OR exp {
-      OpExp {
-        left=$1; oper=PlusOp;
-        right=$3; pos=rhs_start 2;
-      }
-    }
+  | op exp { error 1 "missing left operand"; DummyExp }
+  | exp op { error 2 "missing right operand"; DummyExp }
   | record_creation { $1 }
   | array_creation { $1 }
   | lvalue ASSIGN exp {
@@ -305,6 +264,7 @@ exp:
         var=$1; exp=$3; pos=rhs_start 2;
       }
     }
+  | error ASSIGN exp { error 1 "lvalue error in assignment"; DummyExp }
   | IF exp THEN exp ELSE exp {
       IfExp {
         test=$2; then'=$4;
@@ -334,5 +294,5 @@ exp:
         decs=$2; body=SeqExp $4; pos=rhs_start 1;
       }
     }
-/*  | LPAREN exp RPAREN {}*/
+  | error { error 1 "unexpected expression"; DummyExp }
 ;
