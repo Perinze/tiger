@@ -12,6 +12,6 @@ module IntMapTable (KEY : sig
   )
   type 'a table = 'a IntMap.t
   let empty = IntMap.empty
-  let enter t k a = IntMap.add (KEY.getInt k) a t
+  let enter k a t = IntMap.add (KEY.getInt k) a t
   let look t k = IntMap.find_opt (KEY.getInt k) t
 end
