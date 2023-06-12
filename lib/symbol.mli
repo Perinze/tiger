@@ -1,4 +1,4 @@
-type symbol
+type symbol = string * int
 
 val symbol : string -> symbol
 val name : symbol -> string
