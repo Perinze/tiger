@@ -38,7 +38,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       check_int (trexp left) pos;
       check_int (trexp right) pos;
       {exp=(); ty=T.INT}
-    | _ -> raise NotImplemented
+    | _ -> raise (NotImplemented "trexp")
   and trvar var =
     match var with
     | A.SimpleVar (id, pos) -> (
@@ -48,9 +48,9 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       | None -> 
         Errormsg.error pos ("undefined variable " ^ (S.name id));
         {exp=(); ty=T.UNIT}
-      | _ -> raise NotImplemented
+      | _ -> raise (NotImplemented "simple var for function")
     )
-    | _ -> raise NotImplemented
+    | _ -> raise (NotImplemented "trvar")
   in
     match exp with
     | A.LetExp {decs=decs;body=e;pos=_} ->
@@ -59,6 +59,11 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       let {venv=venv';tenv=tenv'} =
         List.fold_left f {venv=venv;tenv=tenv} decs in
       trans_exp venv' tenv' e
+    
+    | A.SeqExp exps ->
+      let f _ (exp, _) = trans_exp venv tenv exp in
+      List.fold_left f {exp=();ty=T.UNIT} exps 
+
     | _ -> trexp exp
 
 and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
@@ -68,14 +73,14 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
     (match typ with
     | None ->
       {tenv=tenv; venv=S.enter id (E.VarEntry {ty=ty}) venv}
-    | _ -> raise NotImplemented)
+    | _ -> raise (NotImplemented "var dec with type annotation"))
 
   | A.TypeDec decs ->
     let f tenv ({name=id;ty=ty;pos=_} : A.typedec) =
       S.enter id (trans_ty tenv ty) tenv in
     {venv=venv; tenv=List.fold_left f tenv decs}
 
-  | _ -> raise NotImplemented
+  | _ -> raise (NotImplemented "trans_dec")
 
 and trans_ty (tenv : tenv) (ty : A.ty) =
   let look id pos =
