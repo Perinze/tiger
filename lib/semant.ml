@@ -2,7 +2,7 @@ module A = Absyn
 module E = Env
 module S = Symbol
 module T = Types
-exception NotImplemented
+exception NotImplemented of string
 
 type venv = E.enventry S.table
 type tenv = T.ty S.table
@@ -14,9 +14,6 @@ end
 type expty = {exp : Translate.exp; ty : T.ty}
 type env = {tenv : tenv; venv : venv}
 
-let trans_prog (_ : A.exp) : unit =
-  ()
-
 let check_int {exp=_; ty=ty} pos =
   match ty with
   | T.INT -> ()
@@ -24,7 +21,11 @@ let check_int {exp=_; ty=ty} pos =
 
 let actual_ty ty = ty
 
-let rec trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty = 
+let rec trans_prog (exp : A.exp) : unit =
+  let _ = trans_exp E.base_venv E.base_tenv exp in
+  ()
+
+and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty = 
   let rec trexp exp =
     match exp with
     | A.VarExp v -> trvar v
