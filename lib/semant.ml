@@ -68,9 +68,12 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
     | None ->
       {tenv=tenv; venv=S.enter id (E.VarEntry {ty=ty}) venv}
     | _ -> raise NotImplemented)
-  | A.TypeDec [{name=id;ty=ty}] ->
-    {venv=venv;
-     tenv=S.enter id (trans_ty tenv ty) tenv}
+
+  | A.TypeDec decs ->
+    let f tenv ({name=id;ty=ty;pos=_} : A.typedec) =
+      S.enter id (trans_ty tenv ty) tenv in
+    {venv=venv; tenv=List.fold_left f tenv decs}
+
   | _ -> raise NotImplemented
 
 and trans_ty (tenv : tenv) (ty : A.ty) =
