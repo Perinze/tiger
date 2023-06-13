@@ -6,5 +6,5 @@ type ty =
 | INT
 | STRING
 | ARRAY of ty * unique
-| NAME of Symbol.symbol * ty option ref
+| NAME of Symbol.symbol * ty option ref (* place holder for recursion *)
 | UNIT
