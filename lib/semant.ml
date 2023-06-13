@@ -11,6 +11,7 @@ module Translate = struct
 end
 
 type expty = {exp : Translate.exp; ty : Types.ty}
+type env = {tenv : tenv; venv : venv}
 
 let trans_prog (_ : A.exp) : unit =
   ()
@@ -40,14 +41,23 @@ let trans_exp (venv : venv) (_ : tenv) (exp : A.exp) : expty =
     match var with
     | A.SimpleVar (id, pos) -> (
       match S.look venv id with
-      | Some (E.VarEntry {ty}) ->
+      | Some (E.VarEntry {ty=ty}) ->
         {exp=(); ty=actual_ty ty}
       | None -> 
         Errormsg.error pos ("undefined variable " ^ (S.name id));
         {exp=(); ty=Types.UNIT}
       | _ -> raise NotImplemented
     )
-    | A.FieldVar _ -> raise NotImplemented
-    | A.SubscriptVar _ -> raise NotImplemented
+    | _ -> raise NotImplemented
   in
     trexp exp
+
+let trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
+  match dec with
+  | A.VarDec {name=id;escape=_;typ=typ;init=init;pos=_} ->
+    let {exp=_;ty=ty} = trans_exp venv tenv init in
+    (match typ with
+    | None ->
+      {tenv=tenv; venv=S.enter id (E.VarEntry {ty=ty}) venv}
+    | _ -> raise NotImplemented)
+  | _ -> raise NotImplemented
