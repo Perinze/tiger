@@ -23,7 +23,7 @@ let check_int {exp=_; ty=ty} pos =
 
 let actual_ty ty = ty
 
-let trans_exp (venv : venv) (_ : tenv) (exp : A.exp) : expty = 
+let rec trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty = 
   let rec trexp exp =
     match exp with
     | A.VarExp v -> trvar v
@@ -50,9 +50,16 @@ let trans_exp (venv : venv) (_ : tenv) (exp : A.exp) : expty =
     )
     | _ -> raise NotImplemented
   in
-    trexp exp
+    match exp with
+    | A.LetExp {decs=decs;body=e;pos=_} ->
+      let f {venv=v;tenv=t} dec =
+        trans_dec v t dec in
+      let {venv=venv';tenv=tenv'} =
+        List.fold_left f {venv=venv;tenv=tenv} decs in
+      trans_exp venv' tenv' e
+    | _ -> trexp exp
 
-let trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
+and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
   match dec with
   | A.VarDec {name=id;escape=_;typ=typ;init=init;pos=_} ->
     let {exp=_;ty=ty} = trans_exp venv tenv init in
