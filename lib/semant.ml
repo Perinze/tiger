@@ -66,6 +66,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
 
     | _ -> trexp exp
 
+
 and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
   match dec with
   | A.VarDec {name=id;escape=_;typ=typ;init=init;pos=_} ->
@@ -80,7 +81,46 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
       S.enter id (trans_ty tenv ty) tenv in
     {venv=venv; tenv=List.fold_left f tenv decs}
 
-  | _ -> raise (NotImplemented "trans_dec")
+  | A.FunctionDec decs -> (* very tricky functions *)
+
+    (* lookup a T.ty by type symbol tid *)
+    let look (tenv : tenv) tid pos =
+      match S.look tenv tid with
+      | Some ty -> ty
+      | None -> Errormsg.error pos ("unbound type id: " ^ (S.name tid)); UNIT
+    in
+
+    (* transform an (parameter : A.field) to (varsym, T.ty) *)
+    let trparam (tenv : tenv) ({name=id;typ=tid;pos=pos;_} : A.field) : S.symbol * T.ty =
+      (id, look tenv tid pos) in
+
+    (* reduce venv and (param : (varsym, T.ty)) to venv' *)
+    let bindparam venv (id, ty) =
+      S.enter id (E.VarEntry {ty=ty}) venv in
+
+    (* reduce venv and fundec to venv' *)
+    let trfundec venv ({name=id;params=params;body=body;result=result;_} : A.fundec) : venv =
+      let params' : (S.symbol * T.ty) list = List.map (trparam tenv) params in
+      (* venv + formal_params *)
+      let venv' : venv = List.fold_left bindparam venv params' in
+      (* traverse body to infer result type as ty *)
+      let {ty=inferrty;_} : expty = trans_exp venv' tenv body in
+      (* compare inferred type with annotated type *)
+      let checked_rty =
+        match result with
+        | None -> inferrty (* no annotated type*)
+        | Some (rsym, p) ->
+          if (look tenv rsym p) = inferrty then
+            inferrty
+          else
+            (Errormsg.error p ("mismatched result type: " ^ (S.name rsym)); T.UNIT)
+      in
+        (* finally, return venv + fundec *)
+        S.enter id (E.FunEntry {formals=List.map snd params';result=checked_rty}) venv
+    in
+      (* reduce all fundecs and return venv + [fundec] *)
+      {tenv=tenv;venv=List.fold_left trfundec venv decs}
+
 
 and trans_ty (tenv : tenv) (ty : A.ty) =
   let look id pos =
