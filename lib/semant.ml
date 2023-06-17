@@ -19,12 +19,10 @@ let tlook (tenv : tenv) (sym : S.symbol) pos =
   | Some a -> a
   | None -> Errormsg.error pos ("Unbound type name: " ^ S.name sym); UNIT
 
-(*
 let vlook (venv : venv) (sym : S.symbol) pos =
   match S.look venv sym with
   | Some a -> a
   | None -> Errormsg.error pos ("Unbound variable name: " ^ S.name sym); DummyEntry
-*)
 
 let check_int {exp=_; ty=ty} pos =
   match ty with
@@ -76,6 +74,26 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       let f _ (exp, _) = trans_exp venv tenv exp in
       List.fold_left f {exp=();ty=T.UNIT} exps 
 
+    | A.CallExp {func=func;args=args;pos=pos} ->
+      let func' = vlook venv func pos in
+      let func'' =
+        match func' with
+        | FunEntry _ ->
+          func'
+        | _ -> Errormsg.error pos ("Not a function: " ^ (S.name func));
+          DummyEntry in
+      let (formal_tys, result_ty) =
+        match func'' with
+        | FunEntry {formals=formals;result=rt} -> (formals, rt)
+        | _ -> ([], T.UNIT) in
+      let trformal (arg : A.exp) =
+        (trans_exp venv tenv arg).ty in
+      let arg_tys =
+        List.map trformal args in
+      if formal_tys = arg_tys then
+        {exp=();ty=result_ty}
+      else
+        {exp=();ty=UNIT}
     | _ -> trexp exp
 
 
