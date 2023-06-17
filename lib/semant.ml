@@ -14,6 +14,18 @@ end
 type expty = {exp : Translate.exp; ty : T.ty}
 type env = {tenv : tenv; venv : venv}
 
+let tlook (tenv : tenv) (sym : S.symbol) pos =
+  match S.look tenv sym with
+  | Some a -> a
+  | None -> Errormsg.error pos ("Unbound type name: " ^ S.name sym); UNIT
+
+(*
+let vlook (venv : venv) (sym : S.symbol) pos =
+  match S.look venv sym with
+  | Some a -> a
+  | None -> Errormsg.error pos ("Unbound variable name: " ^ S.name sym); DummyEntry
+*)
+
 let check_int {exp=_; ty=ty} pos =
   match ty with
   | T.INT -> ()
@@ -83,16 +95,9 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
 
   | A.FunctionDec decs -> (* very tricky functions *)
 
-    (* lookup a T.ty by type symbol tid *)
-    let look (tenv : tenv) tid pos =
-      match S.look tenv tid with
-      | Some ty -> ty
-      | None -> Errormsg.error pos ("unbound type id: " ^ (S.name tid)); UNIT
-    in
-
     (* transform an (parameter : A.field) to (varsym, T.ty) *)
     let trparam (tenv : tenv) ({name=id;typ=tid;pos=pos;_} : A.field) : S.symbol * T.ty =
-      (id, look tenv tid pos) in
+      (id, tlook tenv tid pos) in
 
     (* reduce venv and (param : (varsym, T.ty)) to venv' *)
     let bindparam venv (id, ty) =
@@ -110,7 +115,7 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
         match result with
         | None -> inferrty (* no annotated type*)
         | Some (rsym, p) ->
-          if (look tenv rsym p) = inferrty then
+          if (tlook tenv rsym p) = inferrty then
             inferrty
           else
             (Errormsg.error p ("mismatched result type: " ^ (S.name rsym)); T.UNIT)
@@ -123,16 +128,10 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
 
 
 and trans_ty (tenv : tenv) (ty : A.ty) =
-  let look id pos =
-    match S.look tenv id with
-    | Some t -> t
-    | None ->
-      Errormsg.error pos ("unbound type identifier: " ^ (S.name id));
-      UNIT in
   match ty with
-  | NameTy (id, pos) -> look id pos
+  | NameTy (id, pos) -> tlook tenv id pos
   | RecordTy fields ->
     let f ({name=id;escape=_;typ=typ;pos=pos} : A.field) =
-      (id, look typ pos) in
+      (id, tlook tenv typ pos) in
     RECORD (List.map f fields, ref ())
-  | ArrayTy (id, pos) -> ARRAY (look id pos, ref ())
+  | ArrayTy (id, pos) -> ARRAY (tlook tenv id pos, ref ())

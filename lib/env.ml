@@ -3,6 +3,7 @@ type ty = Types.ty
 type enventry =
 | VarEntry of {ty : ty}
 | FunEntry of {formals : ty list; result : ty}
+| DummyEntry
 
 let bind s ty = (Symbol.symbol s, ty)
 let f = fun tbl (s, t) -> Symbol.enter s t tbl
