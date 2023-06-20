@@ -44,11 +44,84 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     | A.IntExp _ -> {exp=(); ty=T.INT}
     | A.StringExp (_, _) ->
       {exp=(); ty=T.STRING}
-    | A.OpExp {left; oper=_; right; pos} ->
+    | A.OpExp {left;right;pos;_} ->
       check_int (trexp left) pos;
       check_int (trexp right) pos;
       {exp=(); ty=T.INT}
+
+    | A.RecordExp {fields=args;typ;pos;_} ->
+
+      (* look up typ and check if it's a record type *)
+      (* if yes, extract its field list *)
+      let fields' : (S.symbol * T.ty) list =
+        match tlook tenv typ pos with
+        | RECORD (f, _) -> f
+        | _ ->
+          Errormsg.error pos ("type " ^ S.name typ ^ " is not a record");
+          []
+      in
+      (* sort field list *)
+      let fields'' = List.sort (fun (a, _) (b, _) -> (snd a) - (snd b)) fields' in
+
+      (* sort arg list *)
+      let args' = List.sort (fun (a, _, _) (b, _, _) -> (snd a) - (snd b)) args in
+
+      (* traverse arg's exp and replace it with its type *)
+      let trarg (sym, exp, pos) : S.symbol * T.ty * int =
+        let {ty;_} = trexp exp in
+        (sym, ty, pos)
+      in
+
+      (* args'' is with type instead of exp *)
+      let args'' = List.map trarg args' in
+
+      (* local type of correspondence between arg and field *)
+      let module Local = struct
+        type corres =
+        | Match
+        | OnlyArg of S.symbol * T.ty * int
+        | MissArg of S.symbol * T.ty
+        end
+      in
+
+      (* pair args with fields depending on their symbols *)
+      let rec pair (args : (S.symbol * T.ty * int) list) (fields : (S.symbol * T.ty) list) =
+        match args with
+        | [] -> (
+          match fields with
+          | [] -> []
+          | (fsym, fty) :: frest -> (Local.MissArg (fsym, fty)) :: (pair [] frest)
+        )
+        | (asym, aty, apos) :: arest -> (
+          match fields with
+          | [] -> (Local.OnlyArg (asym, aty, apos)) :: (pair arest [])
+          | (fsym, fty) :: frest ->
+            if asym = fsym then
+              Local.Match :: pair arest frest
+            else if (snd asym) < (snd fsym) then
+              Local.OnlyArg (asym, aty, apos) :: (pair arest ((fsym, fty) :: frest))
+            else
+              Local.MissArg (fsym, fty) :: (pair ((asym, aty, apos) :: arest) frest)
+        )
+      in
+
+      (* pairing result *)
+      let argfield = pair args'' fields'' in
+
+      (* check and print error in need *)
+      let check (c : Local.corres) =
+        match c with
+        | Local.Match -> ()
+        | Local.OnlyArg (s, _, p) -> Errormsg.error p ("There is no field " ^ (S.name s) ^ " within type " ^ (S.name typ))
+        | Local.MissArg (s, _) -> Errormsg.error pos ("Field " ^ (S.name s) ^ " is undefined")
+      in
+
+      (* iter, and return record expty *)
+      List.iter check argfield;
+      {exp=(); ty=tlook tenv typ pos}
+
     | _ -> raise (NotImplemented "trexp")
+
   and trvar var =
     match var with
     | A.SimpleVar (id, pos) -> (
@@ -94,6 +167,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
         {exp=();ty=result_ty}
       else
         {exp=();ty=UNIT}
+
     | _ -> trexp exp
 
 
