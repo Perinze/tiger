@@ -43,6 +43,28 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
   | A.IntExp _ -> {exp=(); ty=T.INT}
   | A.StringExp (_, _) ->
     {exp=(); ty=T.STRING}
+
+  | A.CallExp {func=func;args=args;pos=pos} ->
+    let func' = vlook venv func pos in
+    let func'' =
+      match func' with
+      | FunEntry _ ->
+        func'
+      | _ -> Errormsg.error pos ("Not a function: " ^ (S.name func));
+        DummyEntry in
+    let (formal_tys, result_ty) =
+      match func'' with
+      | FunEntry {formals=formals;result=rt} -> (formals, rt)
+      | _ -> ([], T.UNIT) in
+    let trformal (arg : A.exp) =
+      (trans_exp venv tenv arg).ty in
+    let arg_tys =
+      List.map trformal args in
+    if formal_tys = arg_tys then
+      {exp=();ty=result_ty}
+    else
+      {exp=();ty=UNIT}
+
   | A.OpExp {left;right;pos;_} ->
     check_int (trexp left) pos;
     check_int (trexp right) pos;
@@ -118,6 +140,10 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     (* iter, and return record expty *)
     List.iter check argfield;
     {exp=(); ty=tlook tenv typ pos}
+  
+  | A.SeqExp exps ->
+    let f _ (exp, _) = trans_exp venv tenv exp in
+    List.fold_left f {exp=();ty=T.UNIT} exps 
 
   | A.LetExp {decs=decs;body=e;pos=_} ->
     let f {venv=v;tenv=t} dec =
@@ -125,31 +151,6 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     let {venv=venv';tenv=tenv'} =
       List.fold_left f {venv=venv;tenv=tenv} decs in
     trans_exp venv' tenv' e
-  
-  | A.SeqExp exps ->
-    let f _ (exp, _) = trans_exp venv tenv exp in
-    List.fold_left f {exp=();ty=T.UNIT} exps 
-
-  | A.CallExp {func=func;args=args;pos=pos} ->
-    let func' = vlook venv func pos in
-    let func'' =
-      match func' with
-      | FunEntry _ ->
-        func'
-      | _ -> Errormsg.error pos ("Not a function: " ^ (S.name func));
-        DummyEntry in
-    let (formal_tys, result_ty) =
-      match func'' with
-      | FunEntry {formals=formals;result=rt} -> (formals, rt)
-      | _ -> ([], T.UNIT) in
-    let trformal (arg : A.exp) =
-      (trans_exp venv tenv arg).ty in
-    let arg_tys =
-      List.map trformal args in
-    if formal_tys = arg_tys then
-      {exp=();ty=result_ty}
-    else
-      {exp=();ty=UNIT}
 
   | _ -> raise (NotImplemented "trexp")
 
