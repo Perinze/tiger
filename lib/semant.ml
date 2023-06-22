@@ -172,7 +172,31 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
         {exp=(); ty=T.UNIT}
       | _ -> raise (NotImplemented "simple var for function")
     )
-    | _ -> raise (NotImplemented "trvar")
+    | A.FieldVar (v, id, pos) ->
+      let {ty;_} = trvar v in
+      let fields =
+        match ty with
+        | RECORD (sym_ty_list, _) -> sym_ty_list
+        | _ -> [] in
+      let pred (sym, _) = sym = id in
+      let fieldty =
+        match List.find_opt pred fields with
+        | Some (_, ty) -> ty
+        | None ->
+          Errormsg.error pos ("Undefined field " ^ S.name id);
+          UNIT in
+      {exp=(); ty=fieldty}
+    | A.SubscriptVar (v, exp, pos) -> (
+      let {ty=index_ty;_} = trexp exp in
+      if index_ty != INT then
+        Errormsg.error pos "Array must be indexed with int.";
+      let {ty;_} = trvar v in
+      match ty with
+      | ARRAY (ty, _) -> {exp=(); ty=ty}
+      | _ ->
+        Errormsg.error pos "Not an array.";
+        {exp=(); ty=UNIT}
+    )
   in
     trexp exp
 
