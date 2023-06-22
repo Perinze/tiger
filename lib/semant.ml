@@ -145,6 +145,13 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     let f _ (exp, _) = trans_exp venv tenv exp in
     List.fold_left f {exp=();ty=T.UNIT} exps 
 
+  | A.AssignExp {var;exp;pos} ->
+    let {ty=varty;_} = trvar var in
+    let {ty=expty;_} = trexp exp in
+    if varty != expty then
+      Errormsg.error pos "Type mismatch";
+    {exp=(); ty=UNIT}
+
   | A.LetExp {decs=decs;body=e;pos=_} ->
     let f {venv=v;tenv=t} dec =
       trans_dec v t dec in
