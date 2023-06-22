@@ -36,91 +36,122 @@ let rec trans_prog (exp : A.exp) : unit =
   ()
 
 and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty = 
-  let rec trexp exp =
-    match exp with
-    | A.VarExp v -> trvar v
-    | A.NilExp -> {exp=(); ty=T.NIL}
-    | A.UnitExp -> {exp=(); ty=T.UNIT}
-    | A.IntExp _ -> {exp=(); ty=T.INT}
-    | A.StringExp (_, _) ->
-      {exp=(); ty=T.STRING}
-    | A.OpExp {left;right;pos;_} ->
-      check_int (trexp left) pos;
-      check_int (trexp right) pos;
-      {exp=(); ty=T.INT}
+  let rec trexp = function
+  | A.VarExp v -> trvar v
+  | A.NilExp -> {exp=(); ty=T.NIL}
+  | A.UnitExp -> {exp=(); ty=T.UNIT}
+  | A.IntExp _ -> {exp=(); ty=T.INT}
+  | A.StringExp (_, _) ->
+    {exp=(); ty=T.STRING}
+  | A.OpExp {left;right;pos;_} ->
+    check_int (trexp left) pos;
+    check_int (trexp right) pos;
+    {exp=(); ty=T.INT}
 
-    | A.RecordExp {fields=args;typ;pos;_} ->
+  | A.RecordExp {fields=args;typ;pos;_} ->
 
-      (* look up typ and check if it's a record type *)
-      (* if yes, extract its field list *)
-      let fields' : (S.symbol * T.ty) list =
-        match tlook tenv typ pos with
-        | RECORD (f, _) -> f
-        | _ ->
-          Errormsg.error pos ("type " ^ S.name typ ^ " is not a record");
-          []
-      in
-      (* sort field list *)
-      let fields'' = List.sort (fun (a, _) (b, _) -> (snd a) - (snd b)) fields' in
+    (* look up typ and check if it's a record type *)
+    (* if yes, extract its field list *)
+    let fields' : (S.symbol * T.ty) list =
+      match tlook tenv typ pos with
+      | RECORD (f, _) -> f
+      | _ ->
+        Errormsg.error pos ("type " ^ S.name typ ^ " is not a record");
+        []
+    in
+    (* sort field list *)
+    let fields'' = List.sort (fun (a, _) (b, _) -> (snd a) - (snd b)) fields' in
 
-      (* sort arg list *)
-      let args' = List.sort (fun (a, _, _) (b, _, _) -> (snd a) - (snd b)) args in
+    (* sort arg list *)
+    let args' = List.sort (fun (a, _, _) (b, _, _) -> (snd a) - (snd b)) args in
 
-      (* traverse arg's exp and replace it with its type *)
-      let trarg (sym, exp, pos) : S.symbol * T.ty * int =
-        let {ty;_} = trexp exp in
-        (sym, ty, pos)
-      in
+    (* traverse arg's exp and replace it with its type *)
+    let trarg (sym, exp, pos) : S.symbol * T.ty * int =
+      let {ty;_} = trexp exp in
+      (sym, ty, pos)
+    in
 
-      (* args'' is with type instead of exp *)
-      let args'' = List.map trarg args' in
+    (* args'' is with type instead of exp *)
+    let args'' = List.map trarg args' in
 
-      (* local type of correspondence between arg and field *)
-      let module Local = struct
-        type corres =
-        | Match
-        | OnlyArg of S.symbol * T.ty * int
-        | MissArg of S.symbol * T.ty
-        end
-      in
+    (* local type of correspondence between arg and field *)
+    let module Local = struct
+      type corres =
+      | Match
+      | OnlyArg of S.symbol * T.ty * int
+      | MissArg of S.symbol * T.ty
+      end
+    in
 
-      (* pair args with fields depending on their symbols *)
-      let rec pair (args : (S.symbol * T.ty * int) list) (fields : (S.symbol * T.ty) list) =
-        match args with
-        | [] -> (
-          match fields with
-          | [] -> []
-          | (fsym, fty) :: frest -> (Local.MissArg (fsym, fty)) :: (pair [] frest)
-        )
-        | (asym, aty, apos) :: arest -> (
-          match fields with
-          | [] -> (Local.OnlyArg (asym, aty, apos)) :: (pair arest [])
-          | (fsym, fty) :: frest ->
-            if asym = fsym then
-              Local.Match :: pair arest frest
-            else if (snd asym) < (snd fsym) then
-              Local.OnlyArg (asym, aty, apos) :: (pair arest ((fsym, fty) :: frest))
-            else
-              Local.MissArg (fsym, fty) :: (pair ((asym, aty, apos) :: arest) frest)
-        )
-      in
+    (* pair args with fields depending on their symbols *)
+    let rec pair (args : (S.symbol * T.ty * int) list) (fields : (S.symbol * T.ty) list) =
+      match args with
+      | [] -> (
+        match fields with
+        | [] -> []
+        | (fsym, fty) :: frest -> (Local.MissArg (fsym, fty)) :: (pair [] frest)
+      )
+      | (asym, aty, apos) :: arest -> (
+        match fields with
+        | [] -> (Local.OnlyArg (asym, aty, apos)) :: (pair arest [])
+        | (fsym, fty) :: frest ->
+          if asym = fsym then
+            Local.Match :: pair arest frest
+          else if (snd asym) < (snd fsym) then
+            Local.OnlyArg (asym, aty, apos) :: (pair arest ((fsym, fty) :: frest))
+          else
+            Local.MissArg (fsym, fty) :: (pair ((asym, aty, apos) :: arest) frest)
+      )
+    in
 
-      (* pairing result *)
-      let argfield = pair args'' fields'' in
+    (* pairing result *)
+    let argfield = pair args'' fields'' in
 
-      (* check and print error in need *)
-      let check (c : Local.corres) =
-        match c with
-        | Local.Match -> ()
-        | Local.OnlyArg (s, _, p) -> Errormsg.error p ("There is no field " ^ (S.name s) ^ " within type " ^ (S.name typ))
-        | Local.MissArg (s, _) -> Errormsg.error pos ("Field " ^ (S.name s) ^ " is undefined")
-      in
+    (* check and print error in need *)
+    let check (c : Local.corres) =
+      match c with
+      | Local.Match -> ()
+      | Local.OnlyArg (s, _, p) -> Errormsg.error p ("There is no field " ^ (S.name s) ^ " within type " ^ (S.name typ))
+      | Local.MissArg (s, _) -> Errormsg.error pos ("Field " ^ (S.name s) ^ " is undefined")
+    in
 
-      (* iter, and return record expty *)
-      List.iter check argfield;
-      {exp=(); ty=tlook tenv typ pos}
+    (* iter, and return record expty *)
+    List.iter check argfield;
+    {exp=(); ty=tlook tenv typ pos}
 
-    | _ -> raise (NotImplemented "trexp")
+  | A.LetExp {decs=decs;body=e;pos=_} ->
+    let f {venv=v;tenv=t} dec =
+      trans_dec v t dec in
+    let {venv=venv';tenv=tenv'} =
+      List.fold_left f {venv=venv;tenv=tenv} decs in
+    trans_exp venv' tenv' e
+  
+  | A.SeqExp exps ->
+    let f _ (exp, _) = trans_exp venv tenv exp in
+    List.fold_left f {exp=();ty=T.UNIT} exps 
+
+  | A.CallExp {func=func;args=args;pos=pos} ->
+    let func' = vlook venv func pos in
+    let func'' =
+      match func' with
+      | FunEntry _ ->
+        func'
+      | _ -> Errormsg.error pos ("Not a function: " ^ (S.name func));
+        DummyEntry in
+    let (formal_tys, result_ty) =
+      match func'' with
+      | FunEntry {formals=formals;result=rt} -> (formals, rt)
+      | _ -> ([], T.UNIT) in
+    let trformal (arg : A.exp) =
+      (trans_exp venv tenv arg).ty in
+    let arg_tys =
+      List.map trformal args in
+    if formal_tys = arg_tys then
+      {exp=();ty=result_ty}
+    else
+      {exp=();ty=UNIT}
+
+  | _ -> raise (NotImplemented "trexp")
 
   and trvar var =
     match var with
@@ -135,40 +166,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     )
     | _ -> raise (NotImplemented "trvar")
   in
-    match exp with
-    | A.LetExp {decs=decs;body=e;pos=_} ->
-      let f {venv=v;tenv=t} dec =
-        trans_dec v t dec in
-      let {venv=venv';tenv=tenv'} =
-        List.fold_left f {venv=venv;tenv=tenv} decs in
-      trans_exp venv' tenv' e
-    
-    | A.SeqExp exps ->
-      let f _ (exp, _) = trans_exp venv tenv exp in
-      List.fold_left f {exp=();ty=T.UNIT} exps 
-
-    | A.CallExp {func=func;args=args;pos=pos} ->
-      let func' = vlook venv func pos in
-      let func'' =
-        match func' with
-        | FunEntry _ ->
-          func'
-        | _ -> Errormsg.error pos ("Not a function: " ^ (S.name func));
-          DummyEntry in
-      let (formal_tys, result_ty) =
-        match func'' with
-        | FunEntry {formals=formals;result=rt} -> (formals, rt)
-        | _ -> ([], T.UNIT) in
-      let trformal (arg : A.exp) =
-        (trans_exp venv tenv arg).ty in
-      let arg_tys =
-        List.map trformal args in
-      if formal_tys = arg_tys then
-        {exp=();ty=result_ty}
-      else
-        {exp=();ty=UNIT}
-
-    | _ -> trexp exp
+    trexp exp
 
 
 and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
