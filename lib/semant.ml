@@ -152,6 +152,25 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       Errormsg.error pos "Type mismatch";
     {exp=(); ty=UNIT}
 
+  | A.IfExp {test;then';else';pos} ->
+    let {ty=test_ty;_} = trexp test in
+    if test_ty != INT then
+      Errormsg.error pos "Test expression must has type int.";
+    let {ty=then_ty;_} = trexp then' in
+    let ty =
+      match else' with
+      | None -> then_ty
+      | Some else'' -> (
+        let {ty=else_ty;_} = trexp else'' in
+          if else_ty = then_ty then
+            then_ty
+          else (
+            Errormsg.error pos "Then and else expressions have different types.";
+            UNIT 
+          )
+      ) in
+    {exp=(); ty=ty}
+
   | A.LetExp {decs=decs;body=e;pos=_} ->
     let f {venv=v;tenv=t} dec =
       trans_dec v t dec in
