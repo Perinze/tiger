@@ -196,6 +196,16 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       List.fold_left f {venv=venv;tenv=tenv} decs in
     trans_exp venv' tenv' e
 
+  | A.ArrayExp {typ;size;init;pos} ->
+    let {ty=size_ty;_} = trexp size in
+    if size_ty != INT then
+      Errormsg.error pos "Array size must has type int.";
+    let dty = tlook tenv typ pos in
+    let {ty=init_ty;_} = trexp init in
+    if dty != init_ty then
+      Errormsg.error pos "Init expression has unexpected type";
+    {exp=();ty=dty} 
+
   | _ -> raise (NotImplemented "trexp")
 
   and trvar var =
