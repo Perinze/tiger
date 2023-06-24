@@ -178,6 +178,15 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     let _ = trexp body in
     {exp=(); ty=UNIT}
 
+  | A.ForExp {var;lo;hi;body;pos;_} ->
+    let {ty=lo_ty;_} = trexp lo in
+    let {ty=hi_ty;_} = trexp hi in
+    if lo_ty != INT || hi_ty != INT then
+      Errormsg.error pos "For-loop range must has type int.";
+    let venv' = S.enter var (E.VarEntry {ty=INT}) venv in
+    let _ = trans_exp venv' tenv body in
+    {exp=();ty=UNIT}
+
   | A.LetExp {decs=decs;body=e;pos=_} ->
     let f {venv=v;tenv=t} dec =
       trans_dec v t dec in
