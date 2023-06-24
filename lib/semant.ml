@@ -171,6 +171,13 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       ) in
     {exp=(); ty=ty}
 
+  | A.WhileExp {test;body;pos} ->
+    let {ty=test_ty;_} = trexp test in
+    if test_ty != INT then
+      Errormsg.error pos "Test expression must has type int.";
+    let _ = trexp body in
+    {exp=(); ty=UNIT}
+
   | A.LetExp {decs=decs;body=e;pos=_} ->
     let f {venv=v;tenv=t} dec =
       trans_dec v t dec in
