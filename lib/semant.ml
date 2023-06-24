@@ -200,11 +200,17 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     let {ty=size_ty;_} = trexp size in
     if size_ty != INT then
       Errormsg.error pos "Array size must has type int.";
-    let dty = tlook tenv typ pos in
+    let aty = tlook tenv typ pos in
+    let ety =
+      match aty with
+      | ARRAY (t, _) -> t
+      | _ ->
+        Errormsg.error pos ("Type " ^ (S.name typ) ^ " is not an array type.");
+        UNIT in
     let {ty=init_ty;_} = trexp init in
-    if dty != init_ty then
+    if ety != init_ty then
       Errormsg.error pos "Init expression has unexpected type";
-    {exp=();ty=dty} 
+    {exp=();ty=aty} 
 
   | _ -> raise (NotImplemented "trexp")
 
