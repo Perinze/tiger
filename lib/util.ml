@@ -13,5 +13,5 @@ let tokens s =
         done;
       !lst
 
-let test s =
+let parze s =
   Parzer.parse Lexer.token (mkbuf s)
