@@ -15,3 +15,6 @@ let tokens s =
 
 let parze s =
   Parzer.parse Lexer.token (mkbuf s)
+
+let type_check s =
+  parze s |> Semant.trans_prog
