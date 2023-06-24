@@ -187,6 +187,8 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     let _ = trans_exp venv' tenv body in
     {exp=();ty=UNIT}
 
+  | A.BreakExp _ -> {exp=();ty=UNIT}
+
   | A.LetExp {decs=decs;body=e;pos=_} ->
     let f {venv=v;tenv=t} dec =
       trans_dec v t dec in
