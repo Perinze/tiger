@@ -3,8 +3,11 @@ open Parzer
 }
 let letter = ['_' 'a'-'z' 'A'-'Z']
 let digit = ['0'-'9']
+let cmt_begin = "/*"
+let cmt_end = "*/"
 rule token = parse
     [' ' '\t' '\n'] { token lexbuf }
+  | cmt_begin _* cmt_end { token lexbuf }
   | "type"          { TYPE }
   | "var"           { VAR }
   | "function"      { FUNCTION }
