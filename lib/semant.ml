@@ -226,7 +226,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       | Some (E.VarEntry {ty=ty}) ->
         {exp=(); ty=actual_ty ty}
       | None -> 
-        Errormsg.error pos ("undefined variable " ^ (S.name id));
+        Errormsg.error pos ("error: undeclared variable " ^ (S.name id));
         {exp=(); ty=T.UNIT}
       | _ -> raise (NotImplemented "simple var for function")
     )
