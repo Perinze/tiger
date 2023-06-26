@@ -241,7 +241,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
         match List.find_opt pred fields with
         | Some (_, ty) -> ty
         | None ->
-          Errormsg.error pos ("Undefined field " ^ S.name id);
+          Errormsg.error pos ("error : field " ^ S.name id ^ " not in record type");
           UNIT in
       {exp=(); ty=fieldty}
     | A.SubscriptVar (v, exp, pos) -> (
