@@ -175,7 +175,9 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     let {ty=test_ty;_} = trexp test in
     if test_ty != INT then
       Errormsg.error pos "Test expression must has type int.";
-    let _ = trexp body in
+    let {ty=body_ty;_} = trexp body in
+    if body_ty != UNIT then
+      Errormsg.error pos "error : body of while not unit";
     {exp=(); ty=UNIT}
 
   | A.ForExp {var;lo;hi;body;pos;_} ->
