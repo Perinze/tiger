@@ -165,7 +165,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
           if else_ty = then_ty then
             then_ty
           else (
-            Errormsg.error pos "Then and else expressions have different types.";
+            Errormsg.error pos "error : types of then - else differ";
             UNIT 
           )
       ) in
