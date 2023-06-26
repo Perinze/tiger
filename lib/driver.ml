@@ -2,12 +2,12 @@ exception LoopBreak
 
 let driver(): Token.token list =
   let lst = ref [] in
-    try
-      let lexbuf = Lexing.from_channel stdin in
-      while true do
-        let result = Lexer.token lexbuf in
-          lst := !lst @ [result]
-      done;
-      raise LoopBreak
-    with Lexer.Eof ->
-      !lst
+    let lexbuf = Lexing.from_channel stdin in
+    let continue = ref true in
+    while !continue do
+      let result = Lexer.token lexbuf in
+        if result = Token.EOF then
+          continue := false;
+        lst := !lst @ [result]
+    done;
+    !lst
