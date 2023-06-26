@@ -195,6 +195,9 @@ record_creation:
         typ=sym $1; pos=rhs_start 2;
       }
     }
+  | ID NIL {
+      error 1 "error: syntax error, nil should not be preceded by type-id."; DummyExp
+    }
 ;
 field_assign:
     ID EQ exp { [(sym $1, $3, rhs_start 2)]}
