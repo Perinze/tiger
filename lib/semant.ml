@@ -159,7 +159,10 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     let {ty=then_ty;_} = trexp then' in
     let ty =
       match else' with
-      | None -> then_ty
+      | None ->
+        if then_ty != UNIT then
+          Errormsg.error pos "error : if-then returns non unit";
+        T.UNIT
       | Some else'' -> (
         let {ty=else_ty;_} = trexp else'' in
           if else_ty = then_ty then
