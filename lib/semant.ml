@@ -17,7 +17,7 @@ type env = {tenv : tenv; venv : venv}
 let tlook (tenv : tenv) (sym : S.symbol) pos =
   match S.look tenv sym with
   | Some a -> a
-  | None -> Errormsg.error pos ("Unbound type name: " ^ S.name sym); UNIT
+  | None -> Errormsg.error pos ("error : unknown type " ^ S.name sym); UNIT
 
 let vlook (venv : venv) (sym : S.symbol) pos =
   match S.look venv sym with
@@ -27,7 +27,7 @@ let vlook (venv : venv) (sym : S.symbol) pos =
 let check_int {exp=_; ty=ty} pos =
   match ty with
   | T.INT -> ()
-  | _ -> Errormsg.error pos "integer required"
+  | _ -> Errormsg.error pos "error : integer required"
 
 let actual_ty ty = ty
 
@@ -44,6 +44,8 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
   | A.StringExp (_, _) ->
     {exp=(); ty=T.STRING}
 
+  (* TODO check formals and actuals' types, test34 *)
+  (* TODO check formals and actuals' numbers, test35, 36 *)
   | A.CallExp {func=func;args=args;pos=pos} ->
     let func' = vlook venv func pos in
     let func'' =
@@ -145,11 +147,12 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     let f _ (exp, _) = trans_exp venv tenv exp in
     List.fold_left f {exp=();ty=T.UNIT} exps 
 
+  (* TODO assign nil to record type is legal : test44 *)
   | A.AssignExp {var;exp;pos} ->
     let {ty=varty;_} = trvar var in
     let {ty=expty;_} = trexp exp in
     if varty != expty then
-      Errormsg.error pos "Type mismatch";
+      Errormsg.error pos "error : type mismatch";
     {exp=(); ty=UNIT}
 
   | A.IfExp {test;then';else';pos} ->
@@ -214,7 +217,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
         UNIT in
     let {ty=init_ty;_} = trexp init in
     if ety != init_ty then
-      Errormsg.error pos "Init expression has unexpected type";
+      Errormsg.error pos "error : initializing exp and array type differ";
     {exp=();ty=aty} 
 
   | _ -> raise (NotImplemented "trexp")
@@ -235,7 +238,9 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       let fields =
         match ty with
         | RECORD (sym_ty_list, _) -> sym_ty_list
-        | _ -> [] in
+        | _ ->
+          Errormsg.error pos "error : variable not record";
+          [] in
       let pred (sym, _) = sym = id in
       let fieldty =
         match List.find_opt pred fields with
@@ -252,7 +257,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       match ty with
       | ARRAY (ty, _) -> {exp=(); ty=ty}
       | _ ->
-        Errormsg.error pos "Not an array.";
+        Errormsg.error pos "error : variable not array";
         {exp=(); ty=UNIT}
     )
   in
@@ -261,6 +266,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
 
 and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
   match dec with
+  (* TODO initializing nil expressions not constrained by record type : test45 *)
   | A.VarDec {name=id;escape=_;typ;init;pos} ->
     let {exp=_;ty=ty} = trans_exp venv tenv init in
     (match typ with
@@ -269,14 +275,17 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
     | Some (typ', p) ->
       let dty = tlook tenv typ' p in
       if dty != ty then
-        Errormsg.error pos ("Init exp doesn't have type " ^ (S.name typ'));
+        Errormsg.error pos ("error : type constraint and init value differ");
       {tenv=tenv; venv=S.enter id (E.VarEntry {ty=ty}) venv})
 
+  (* TODO check if types have same name : test38 *)
   | A.TypeDec decs ->
     let f tenv ({name=id;ty=ty;pos=_} : A.typedec) =
       S.enter id (trans_ty tenv ty) tenv in
     {venv=venv; tenv=List.fold_left f tenv decs}
 
+  (* TODO check if functions have same name : test39 *)
+  (* TODO check if procedure returns value : test40 *)
   | A.FunctionDec decs -> (* very tricky functions *)
 
     (* transform an (parameter : A.field) to (varsym, T.ty) *)
