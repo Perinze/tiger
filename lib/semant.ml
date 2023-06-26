@@ -256,12 +256,16 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
 
 and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
   match dec with
-  | A.VarDec {name=id;escape=_;typ=typ;init=init;pos=_} ->
+  | A.VarDec {name=id;escape=_;typ;init;pos} ->
     let {exp=_;ty=ty} = trans_exp venv tenv init in
     (match typ with
     | None ->
       {tenv=tenv; venv=S.enter id (E.VarEntry {ty=ty}) venv}
-    | _ -> raise (NotImplemented "var dec with type annotation"))
+    | Some (typ', p) ->
+      let dty = tlook tenv typ' p in
+      if dty != ty then
+        Errormsg.error pos ("Init exp doesn't have type " ^ (S.name typ'));
+      {tenv=tenv; venv=S.enter id (E.VarEntry {ty=ty}) venv})
 
   | A.TypeDec decs ->
     let f tenv ({name=id;ty=ty;pos=_} : A.typedec) =
