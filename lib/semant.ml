@@ -37,6 +37,7 @@ let rec trans_prog (exp : A.exp) : unit =
 
 and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty = 
   let rec trexp = function
+  | A.DummyExp -> {exp=(); ty=UNIT}
   | A.VarExp v -> trvar v
   | A.NilExp -> {exp=(); ty=T.NIL}
   | A.UnitExp -> {exp=(); ty=T.UNIT}
@@ -294,7 +295,6 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
     {venv=venv; tenv=List.fold_left f tenv decs}
 
   (* TODO check if functions have same name : test39 *)
-  (* TODO check if procedure returns value : test40 *)
   | A.FunctionDec decs -> (* very tricky functions *)
 
     (* transform an (parameter : A.field) to (varsym, T.ty) *)
