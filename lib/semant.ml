@@ -45,9 +45,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
   | A.StringExp (_, _) ->
     {exp=(); ty=T.STRING}
 
-  (* TODO check formals and actuals' types, test34 *)
-  (* TODO check formals and actuals' numbers, test35, 36 *)
-  | A.CallExp {func=func;args=args;pos=pos} ->
+  | A.CallExp {func;args;pos} ->
     let func' = vlook venv func pos in
     let func'' =
       match func' with
@@ -65,8 +63,17 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       List.map trformal args in
     if formal_tys = arg_tys then
       {exp=();ty=result_ty}
-    else
+    else (
+      let formal_len = List.length formal_tys in
+      let arg_len = List.length arg_tys in
+      if formal_len = arg_len then
+        Errormsg.error pos "error : formals and actuals have different types"
+      else if formal_len > arg_len then
+        Errormsg.error pos "error : formals are more than actuals"
+      else 
+        Errormsg.error pos "error : formals are fewer than actuals";
       {exp=();ty=UNIT}
+    )
 
   | A.OpExp {left;right;pos;_} ->
     check_int (trexp left) pos;
@@ -220,8 +227,6 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     if ety != init_ty then
       Errormsg.error pos "error : initializing exp and array type differ";
     {exp=();ty=aty} 
-
-  | _ -> raise (NotImplemented "trexp")
 
   and trvar var =
     match var with
