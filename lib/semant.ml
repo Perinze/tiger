@@ -266,17 +266,26 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
 
 and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
   match dec with
-  (* TODO initializing nil expressions not constrained by record type : test45 *)
-  | A.VarDec {name=id;escape=_;typ;init;pos} ->
+  | A.VarDec {name=id;typ;init;pos;_} ->
     let {exp=_;ty=ty} = trans_exp venv tenv init in
     (match typ with
     | None ->
+      if ty = NIL then
+        Errormsg.error pos
+        "initializing nil expressions not constrained by record type";
       {tenv=tenv; venv=S.enter id (E.VarEntry {ty=ty}) venv}
     | Some (typ', p) ->
       let dty = tlook tenv typ' p in
       if dty != ty then
-        Errormsg.error pos ("error : type constraint and init value differ");
-      {tenv=tenv; venv=S.enter id (E.VarEntry {ty=ty}) venv})
+        if ty = NIL then
+          match dty with
+          | RECORD _ -> ()
+          | _ ->
+            Errormsg.error pos
+            "initializing nil expressions not constrained by record type"
+        else
+          Errormsg.error pos "error : type constraint and init value differ";
+      {tenv=tenv; venv=S.enter id (E.VarEntry {ty=dty}) venv})
 
   (* TODO check if types have same name : test38 *)
   | A.TypeDec decs ->
