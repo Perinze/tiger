@@ -306,7 +306,7 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
       S.enter id (E.VarEntry {ty=ty}) venv in
 
     (* reduce venv and fundec to venv' *)
-    let trfundec venv ({name=id;params=params;body=body;result=result;_} : A.fundec) : venv =
+    let trfundec venv ({name=id;params;body;result;pos} : A.fundec) : venv =
       let params' : (S.symbol * T.ty) list = List.map (trparam tenv) params in
       (* venv + formal_params *)
       let venv' : venv = List.fold_left bindparam venv params' in
@@ -315,12 +315,17 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
       (* compare inferred type with annotated type *)
       let checked_rty =
         match result with
-        | None -> inferrty (* no annotated type*)
+        | None ->
+          if inferrty != UNIT then
+            Errormsg.error pos "error : procedure returns value";
+          T.UNIT
         | Some (rsym, p) ->
           if (tlook tenv rsym p) = inferrty then
             inferrty
-          else
-            (Errormsg.error p ("mismatched result type: " ^ (S.name rsym)); T.UNIT)
+          else (
+            Errormsg.error p ("mismatched result type: " ^ (S.name rsym));
+            T.UNIT
+          )
       in
         (* finally, return venv + fundec *)
         S.enter id (E.FunEntry {formals=List.map snd params';result=checked_rty}) venv
