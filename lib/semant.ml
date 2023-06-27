@@ -155,12 +155,17 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     let f _ (exp, _) = trans_exp venv tenv exp in
     List.fold_left f {exp=();ty=T.UNIT} exps 
 
-  (* TODO assign nil to record type is legal : test44 *)
   | A.AssignExp {var;exp;pos} ->
     let {ty=varty;_} = trvar var in
     let {ty=expty;_} = trexp exp in
-    if varty != expty then
-      Errormsg.error pos "error : type mismatch";
+    if varty != expty then (
+      if expty = NIL then
+        match varty with
+        | RECORD _ -> ()
+        | _ -> Errormsg.error pos "error : type mismatch"
+      else
+        Errormsg.error pos "error : type mismatch"
+    );
     {exp=(); ty=UNIT}
 
   | A.IfExp {test;then';else';pos} ->
