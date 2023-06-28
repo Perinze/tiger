@@ -317,9 +317,25 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
           Errormsg.error pos "error : type constraint and init value differ";
       {tenv=tenv; venv=S.enter id (E.VarEntry {ty=dty}) venv})
 
-  (* TODO check if types have same name : test38 *)
   (* TODO check mutually recursive types that do not pass through record : test16 *)
   | A.TypeDec decs ->
+
+    (* check name duplication *)
+    let names = List.map (fun ({name;pos;_} : A.typedec) -> (name, pos)) decs in
+    let sorted_names = List.sort (fun a b -> (snd (fst a)) - (snd (fst b))) names in
+    let rec check_dup = function
+    | a :: b :: rest ->
+      if (fst a) = (fst b) then (
+        Errormsg.error (snd b) "error : types with the same name in the same batch of mutually recursive types";
+        true
+      ) else
+        check_dup (b :: rest)
+    | [_] -> false
+    | [] -> false
+    in
+    if check_dup sorted_names then
+      {venv=venv;tenv=tenv}
+    else
 
     (* reduce tenv and typedec to tenv' without traverse it's defination *)
     let bindtypedec tenv ({name=id;_} : A.typedec) : tenv =
