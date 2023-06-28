@@ -307,6 +307,23 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
   (* TODO check if functions have same name : test39 *)
   | A.FunctionDec decs -> (* very tricky functions *)
 
+    (* reduce venv and fundec to venv' without traverse it's body *)
+    let bindfundec venv ({name=id;params;result;_} : A.fundec) : venv =
+      S.enter id (E.FunEntry {
+        formals =
+          List.map
+            (fun (field : A.field) -> tlook tenv field.typ field.pos)
+            params;
+        result =
+          match result with
+          | None -> UNIT
+          | Some (s, p) -> tlook tenv s p
+      }) venv in
+
+    (* venv + all function dec, for recursion *)
+    let venv' =
+      List.fold_left bindfundec venv decs in
+
     (* transform an (parameter : A.field) to (varsym, T.ty) *)
     let trparam (tenv : tenv) ({name=id;typ=tid;pos=pos;_} : A.field) : S.symbol * T.ty =
       (id, tlook tenv tid pos) in
@@ -314,34 +331,28 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
     (* reduce venv and (param : (varsym, T.ty)) to venv' *)
     let bindparam venv (id, ty) =
       S.enter id (E.VarEntry {ty=ty}) venv in
-
-    (* reduce venv and fundec to venv' *)
-    let trfundec venv ({name=id;params;body;result;pos} : A.fundec) : venv =
+    
+    (* traverse fundec body *)
+    let trfundec venv ({params;body;result;pos;_} : A.fundec) : unit =
       let params' : (S.symbol * T.ty) list = List.map (trparam tenv) params in
       (* venv + formal_params *)
       let venv' : venv = List.fold_left bindparam venv params' in
       (* traverse body to infer result type as ty *)
       let {ty=inferrty;_} : expty = trans_exp venv' tenv body in
       (* compare inferred type with annotated type *)
-      let checked_rty =
-        match result with
-        | None ->
-          if inferrty != UNIT then
-            Errormsg.error pos "error : procedure returns value";
-          T.UNIT
-        | Some (rsym, p) ->
-          if (tlook tenv rsym p) = inferrty then
-            inferrty
-          else (
-            Errormsg.error p ("mismatched result type: " ^ (S.name rsym));
-            T.UNIT
-          )
-      in
-        (* finally, return venv + fundec *)
-        S.enter id (E.FunEntry {formals=List.map snd params';result=checked_rty}) venv
+      match result with
+      | None ->
+        if inferrty != UNIT then
+          Errormsg.error pos "error : procedure returns value";
+      | Some (rsym, p) ->
+        if (tlook tenv rsym p) != inferrty then
+          Errormsg.error p ("mismatched result type: " ^ (S.name rsym))
     in
-      (* reduce all fundecs and return venv + [fundec] *)
-      {tenv=tenv;venv=List.fold_left trfundec venv decs}
+
+    (* traverse all fundecs' body for type-checking *)
+    List.iter (trfundec venv') decs;
+    (* return venv with all function dec *)
+    {tenv=tenv;venv=venv'}
 
 
 and trans_ty (tenv : tenv) (ty : A.ty) =
