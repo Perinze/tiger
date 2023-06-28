@@ -9,6 +9,6 @@ let error (pos : Lexing.position) (msg : string) : unit =
                  "." ^ string_of_int (pos.pos_cnum - pos.pos_bol));
   print_endline (":" ^ msg)
 
-let impossible msg =
+let impossible msg : unit =
   print_endline ("error: compiler bug: " ^ msg);
   raise Error
