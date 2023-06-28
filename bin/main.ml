@@ -8,5 +8,7 @@ let () =
     | 1 -> stdin
     | _ -> open_in args.(1)
   in
-  Parzer.parse Lexer.token (Lexing.from_channel channel)
+  let lexbuf = Lexing.from_channel channel in
+  Lexing.set_filename lexbuf args.(1);
+  Parzer.parse Lexer.token lexbuf
   |> Semant.trans_prog
