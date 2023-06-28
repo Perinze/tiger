@@ -29,7 +29,26 @@ let check_int {exp=_; ty=ty} pos =
   | T.INT -> ()
   | _ -> Errormsg.error pos "error : integer required"
 
-let actual_ty ty = ty
+let actual_ty (ty : T.ty) : T.ty =
+  match ty with
+  (* name type : return its content *)
+  | NAME (_, {contents=Some t}) ->
+    t
+
+  | NAME (_, {contents=None}) ->
+    Errormsg.impossible "an empty name type"; UNIT
+
+  (* compound type : recursively traverse *)
+  (*
+  | RECORD (sts, unique) ->
+    RECORD (List.map (fun (s, t) -> (s, actual_ty t)) sts, unique)
+
+  | ARRAY (ty, unique) ->
+    ARRAY ((actual_ty ty), unique)
+  *)
+
+  (* other type : return itself *)
+  | _ -> ty
 
 let rec trans_prog (exp : A.exp) : unit =
   let _ = trans_exp E.base_venv E.base_tenv exp in
@@ -221,10 +240,10 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     let {ty=size_ty;_} = trexp size in
     if size_ty != INT then
       Errormsg.error pos "Array size must has type int.";
-    let aty = tlook tenv typ pos in
+    let aty = actual_ty (tlook tenv typ pos) in
     let ety =
       match aty with
-      | ARRAY (t, _) -> t
+      | ARRAY (t, _) -> actual_ty t
       | _ ->
         Errormsg.error pos ("Type " ^ (S.name typ) ^ " is not an array type.");
         UNIT in
@@ -299,15 +318,44 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
       {tenv=tenv; venv=S.enter id (E.VarEntry {ty=dty}) venv})
 
   (* TODO check if types have same name : test38 *)
+  (* TODO check mutually recursive types that do not pass through record : test16 *)
   | A.TypeDec decs ->
-    let f tenv ({name=id;ty=ty;pos=_} : A.typedec) =
-      S.enter id (trans_ty tenv ty) tenv in
-    {venv=venv; tenv=List.fold_left f tenv decs}
+
+    (* reduce tenv and typedec to tenv' without traverse it's defination *)
+    let bindtypedec tenv ({name=id;_} : A.typedec) : tenv =
+      S.enter id (T.NAME (id, ref None)) tenv in
+
+    (* tenv + all type dec, for recursion *)
+    let tenv' = List.fold_left bindtypedec tenv decs in
+
+    (* traverse typedec A.ty and update tenv's name entries (ref) *)
+    let trdec tenv ({name;ty;pos} : A.typedec) : unit =
+      let r : T.ty option ref =
+        match tlook tenv name pos with
+        | T.NAME (s, r) ->
+          if s != name then
+            Errormsg.impossible "different symbols in key-value pair";
+          r
+        | _ ->
+          Errormsg.impossible "expect a name type";
+          ref None
+      in
+      r := Some (trans_ty tenv ty)
+    in
+        
+    (* assign trans_ty's returns to refs in entries of tenv *)
+    List.iter (trdec tenv') decs;
+
+    (* map dec with actual_ty of it in tenv' *)
+    let mapentry tenv ({name;pos;_} : A.typedec) : tenv =
+      S.enter name (tlook tenv' name pos |> actual_ty) tenv in
+
+    {venv=venv; tenv=List.fold_left mapentry tenv decs}
 
   (* TODO check if functions have same name : test39 *)
   | A.FunctionDec decs -> (* very tricky functions *)
 
-    (* reduce venv and fundec to venv' without traverse it's body *)
+    (* reduce venv and fundec to venv' without traversing it's body *)
     let bindfundec venv ({name=id;params;result;_} : A.fundec) : venv =
       S.enter id (E.FunEntry {
         formals =
@@ -355,11 +403,11 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
     {tenv=tenv;venv=venv'}
 
 
-and trans_ty (tenv : tenv) (ty : A.ty) =
+and trans_ty (tenv : tenv) (ty : A.ty) : T.ty =
   match ty with
   | NameTy (id, pos) -> tlook tenv id pos
   | RecordTy fields ->
-    let f ({name=id;escape=_;typ=typ;pos=pos} : A.field) =
+    let f ({name=id;typ=typ;pos=pos;_} : A.field) =
       (id, tlook tenv typ pos) in
     RECORD (List.map f fields, ref ())
   | ArrayTy (id, pos) -> ARRAY (tlook tenv id pos, ref ())
