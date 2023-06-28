@@ -1,5 +1,5 @@
 [@@@ocaml.warning "-30"]
-type pos = int and symbol = Symbol.symbol
+type pos = Lexing.position and symbol = Symbol.symbol
 
 type var =
   | SimpleVar of symbol * pos

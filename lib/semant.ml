@@ -98,7 +98,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     let args' = List.sort (fun (a, _, _) (b, _, _) -> (snd a) - (snd b)) args in
 
     (* traverse arg's exp and replace it with its type *)
-    let trarg (sym, exp, pos) : S.symbol * T.ty * int =
+    let trarg (sym, exp, pos) : S.symbol * T.ty * Lexing.position =
       let {ty;_} = trexp exp in
       (sym, ty, pos)
     in
@@ -110,13 +110,13 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     let module Local = struct
       type corres =
       | Match
-      | OnlyArg of S.symbol * T.ty * int
+      | OnlyArg of S.symbol * T.ty * A.pos
       | MissArg of S.symbol * T.ty
       end
     in
 
     (* pair args with fields depending on their symbols *)
-    let rec pair (args : (S.symbol * T.ty * int) list) (fields : (S.symbol * T.ty) list) =
+    let rec pair (args : (S.symbol * T.ty * A.pos) list) (fields : (S.symbol * T.ty) list) =
       match args with
       | [] -> (
         match fields with
