@@ -364,7 +364,11 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
 
     (* map dec with actual_ty of it in tenv' *)
     let mapentry tenv ({name;pos;_} : A.typedec) : tenv =
-      S.enter name (tlook tenv' name pos |> actual_ty) tenv in
+      print_endline (S.name name);
+      let ty = tlook tenv' name pos |> actual_ty in
+      print_endline (T.format ty);
+      S.enter name ty tenv
+    in
 
     {venv=venv; tenv=List.fold_left mapentry tenv decs}
 
