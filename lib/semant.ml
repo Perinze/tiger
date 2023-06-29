@@ -34,6 +34,19 @@ let is_name (ty : T.ty) : bool =
   | NAME _ -> true
   | _ -> false
 
+let check_dup (names : (S.symbol * Lexing.position) list) : (unit, Lexing.position) result =
+  let sorted_names = List.sort (fun a b -> (snd (fst a)) - (snd (fst b))) names in
+  let rec check_dup = function
+  | a :: b :: rest ->
+    if (fst a) = (fst b) then
+      Error (snd b)
+    else
+      check_dup (b :: rest)
+  | [_] -> Ok ()
+  | [] -> Ok ()
+  in
+  check_dup sorted_names
+
 let actual_ty (ty : T.ty) (pos : Lexing.position) : T.ty =
   (* symbol set marking whether symbol is visited *)
   let module SymbolSet = Set.Make (
@@ -338,20 +351,11 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
 
     (* check name duplication *)
     let names = List.map (fun ({name;pos;_} : A.typedec) -> (name, pos)) decs in
-    let sorted_names = List.sort (fun a b -> (snd (fst a)) - (snd (fst b))) names in
-    let rec check_dup = function
-    | a :: b :: rest ->
-      if (fst a) = (fst b) then (
-        Errormsg.error (snd b) "error : types with the same name in the same batch of mutually recursive types";
-        true
-      ) else
-        check_dup (b :: rest)
-    | [_] -> false
-    | [] -> false
-    in
-    if check_dup sorted_names then
+    (match check_dup names with
+    | Error pos ->
+      Errormsg.error pos "error : types with the same name in the same batch of mutually recursive types";
       {venv=venv;tenv=tenv}
-    else
+    | Ok () ->
 
     (* reduce tenv and typedec to tenv' without traverse it's defination *)
     let bindtypedec tenv ({name=id;_} : A.typedec) : tenv =
@@ -389,10 +393,17 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
       S.enter name ty tenv
     in
 
-    {venv=venv; tenv=List.fold_left mapentry tenv decs}
+    {venv=venv; tenv=List.fold_left mapentry tenv decs})
 
-  (* TODO check if functions have same name : test39 *)
   | A.FunctionDec decs -> (* very tricky functions *)
+
+    (* check name duplication *)
+    let names = List.map (fun ({name;pos;_} : A.fundec) -> (name, pos)) decs in
+    (match check_dup names with
+    | Error pos ->
+      Errormsg.error pos "error : functions with the same name in the same batch of mutually recursive functions";
+      {venv=venv;tenv=tenv}
+    | Ok () ->
 
     (* reduce venv and fundec to venv' without traversing it's body *)
     let bindfundec venv ({name=id;params;result;_} : A.fundec) : venv =
@@ -439,7 +450,7 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
     (* traverse all fundecs' body for type-checking *)
     List.iter (trfundec venv') decs;
     (* return venv with all function dec *)
-    {tenv=tenv;venv=venv'}
+    {tenv=tenv;venv=venv'})
 
 
 and trans_ty (tenv : tenv) (ty : A.ty) : T.ty =
