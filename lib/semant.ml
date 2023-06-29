@@ -310,7 +310,7 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
         "initializing nil expressions not constrained by record type";
       {tenv=tenv; venv=S.enter id (E.VarEntry {ty=ty}) venv}
     | Some (typ', p) ->
-      let dty = ref (tlook tenv typ' p) in
+      let dty = tlook tenv typ' p in
       if dty != ty then
         if ty = NIL then
           match dty with
