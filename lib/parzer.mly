@@ -2,7 +2,7 @@
 %{
 open Absyn
 let sym = Symbol.symbol
-let error tokidx = Errormsg.error (rhs_start_pos tokidx)
+let error tokidx msg = Errormsg.error (rhs_start_pos tokidx) ("syntax error : " ^ msg)
 %}
 %token EOF
 %token <string> ID
@@ -196,7 +196,7 @@ record_creation:
       }
     }
   | ID NIL {
-      error 1 "error: syntax error, nil should not be preceded by type-id."; DummyExp
+      error 1 "nil should not be preceded by type-id"; DummyExp
     }
 ;
 field_assign:

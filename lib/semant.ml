@@ -14,20 +14,23 @@ end
 type expty = {exp : Translate.exp; ty : T.ty}
 type env = {tenv : tenv; venv : venv}
 
+let error (pos : Lexing.position) (msg : string) : unit =
+  Errormsg.error pos ("error : " ^ msg)
+
 let tlook (tenv : tenv) (sym : S.symbol) pos =
   match S.look tenv sym with
   | Some a -> a
-  | None -> Errormsg.error pos ("error : unknown type " ^ S.name sym); UNIT
+  | None -> error pos ("unknown type " ^ S.name sym); UNIT
 
 let vlook (venv : venv) (sym : S.symbol) pos =
   match S.look venv sym with
   | Some a -> a
-  | None -> Errormsg.error pos ("Unbound variable name: " ^ S.name sym); DummyEntry
+  | None -> error pos ("unbound variable name " ^ S.name sym); DummyEntry
 
 let check_int {exp=_; ty=ty} pos =
   match ty with
   | T.INT -> ()
-  | _ -> Errormsg.error pos "error : integer required"
+  | _ -> error pos "integer required"
 
 let is_name (ty : T.ty) : bool =
   match ty with
@@ -63,8 +66,8 @@ let actual_ty (ty : T.ty) (pos : Lexing.position) : T.ty =
     (* name type : return its content *)
     | NAME (sym, {contents=Some t}) ->
       if SymbolSet.mem sym set then (
-        Errormsg.error pos
-          "error: mutually recursive types that do not pass through record or array";
+        error pos
+          "mutually recursive types that do not pass through record or array";
         UNIT
       ) else
         trty (SymbolSet.add sym set) t
@@ -98,7 +101,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       match func' with
       | FunEntry _ ->
         func'
-      | _ -> Errormsg.error pos ("Not a function: " ^ (S.name func));
+      | _ -> error pos ("not a function: " ^ (S.name func));
         DummyEntry in
     let (formal_tys, result_ty) =
       match func'' with
@@ -114,11 +117,11 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       let formal_len = List.length formal_tys in
       let arg_len = List.length arg_tys in
       if formal_len = arg_len then
-        Errormsg.error pos "error : formals and actuals have different types"
+        error pos "formals and actuals have different types"
       else if formal_len > arg_len then
-        Errormsg.error pos "error : formals are more than actuals"
+        error pos "formals are more than actuals"
       else 
-        Errormsg.error pos "error : formals are fewer than actuals";
+        error pos "formals are fewer than actuals";
       {exp=();ty=UNIT}
     )
 
@@ -135,7 +138,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       match tlook tenv typ pos with
       | RECORD (f, _) -> f
       | _ ->
-        Errormsg.error pos ("type " ^ S.name typ ^ " is not a record");
+        error pos ("type " ^ S.name typ ^ " is not a record");
         []
     in
     (* sort field list *)
@@ -190,8 +193,10 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     let check (c : Local.corres) =
       match c with
       | Local.Match -> ()
-      | Local.OnlyArg (s, _, p) -> Errormsg.error p ("There is no field " ^ (S.name s) ^ " within type " ^ (S.name typ))
-      | Local.MissArg (s, _) -> Errormsg.error pos ("Field " ^ (S.name s) ^ " is undefined")
+      | Local.OnlyArg (s, _, p) ->
+        error p ("there is no field " ^ (S.name s) ^ " within record type " ^ (S.name typ))
+      | Local.MissArg (s, _) ->
+        error pos ("field " ^ (S.name s) ^ " is undeclared")
     in
 
     (* iter, and return record expty *)
@@ -209,29 +214,29 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       if expty = NIL then
         match varty with
         | RECORD _ -> ()
-        | _ -> Errormsg.error pos "error : type mismatch"
+        | _ -> error pos "type mismatch"
       else
-        Errormsg.error pos "error : type mismatch"
+        error pos "type mismatch"
     );
     {exp=(); ty=UNIT}
 
   | A.IfExp {test;then';else';pos} ->
     let {ty=test_ty;_} = trexp test in
     if test_ty != INT then
-      Errormsg.error pos "Test expression must has type int.";
+      error pos "test expression must has type int";
     let {ty=then_ty;_} = trexp then' in
     let ty =
       match else' with
       | None ->
         if then_ty != UNIT then
-          Errormsg.error pos "error : if-then returns non unit";
+          error pos "if-then returns non unit";
         T.UNIT
       | Some else'' -> (
         let {ty=else_ty;_} = trexp else'' in
           if else_ty = then_ty then
             then_ty
           else (
-            Errormsg.error pos "error : types of then - else differ";
+            error pos "types of then - else differ";
             UNIT 
           )
       ) in
@@ -240,17 +245,17 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
   | A.WhileExp {test;body;pos} ->
     let {ty=test_ty;_} = trexp test in
     if test_ty != INT then
-      Errormsg.error pos "Test expression must has type int.";
+      error pos "test expression must has type int";
     let {ty=body_ty;_} = trexp body in
     if body_ty != UNIT then
-      Errormsg.error pos "error : body of while not unit";
+      error pos "body of while not unit";
     {exp=(); ty=UNIT}
 
   | A.ForExp {var;lo;hi;body;pos;_} ->
     let {ty=lo_ty;_} = trexp lo in
     let {ty=hi_ty;_} = trexp hi in
     if lo_ty != INT || hi_ty != INT then
-      Errormsg.error pos "For-loop range must has type int.";
+      error pos "for-loop range must has type int";
     let venv' = S.enter var (E.VarEntry {ty=INT}) venv in
     let _ = trans_exp venv' tenv body in
     {exp=();ty=UNIT}
@@ -267,17 +272,17 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
   | A.ArrayExp {typ;size;init;pos} ->
     let {ty=size_ty;_} = trexp size in
     if size_ty != INT then
-      Errormsg.error pos "Array size must has type int.";
+      error pos "array size must has type int";
     let aty = tlook tenv typ pos in
     let ety =
       match aty with
       | ARRAY (t, _) -> actual_ty t pos
       | _ ->
-        Errormsg.error pos ("Type " ^ (S.name typ) ^ " is not an array type.");
+        error pos ("type " ^ (S.name typ) ^ " is not an array type");
         UNIT in
     let {ty=init_ty;_} = trexp init in
     if ety != init_ty then
-      Errormsg.error pos "error : initializing exp and array type differ";
+      error pos "initializing exp and array type differ";
     {exp=();ty=aty} 
 
   and trvar var =
@@ -289,7 +294,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
         (* because trans_dec now iter decs with actual_ty, ty not necessarily recheck *)
         {exp=(); ty=ty}
       | None -> 
-        Errormsg.error pos ("error: undeclared variable " ^ (S.name id));
+        error pos ("undeclared variable " ^ (S.name id));
         {exp=(); ty=T.UNIT}
       | _ -> raise (NotImplemented "simple var for function")
     )
@@ -299,25 +304,25 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
         match ty with
         | RECORD (sym_ty_list, _) -> sym_ty_list
         | _ ->
-          Errormsg.error pos "error : variable not record";
+          error pos "variable not record";
           [] in
       let pred (sym, _) = sym = id in
       let fieldty =
         match List.find_opt pred fields with
         | Some (_, ty) -> ty
         | None ->
-          Errormsg.error pos ("error : field " ^ S.name id ^ " not in record type");
+          error pos ("field " ^ S.name id ^ " not in record type");
           UNIT in
       {exp=(); ty=fieldty}
     | A.SubscriptVar (v, exp, pos) -> (
       let {ty=index_ty;_} = trexp exp in
       if index_ty != INT then
-        Errormsg.error pos "Array must be indexed with int.";
+        error pos "array must be indexed with int";
       let {ty;_} = trvar v in
       match ty with
       | ARRAY (ty, _) -> {exp=(); ty=ty}
       | _ ->
-        Errormsg.error pos "error : variable not array";
+        error pos "variable not array";
         {exp=(); ty=UNIT}
     )
   in
@@ -331,7 +336,7 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
     (match typ with
     | None ->
       if ty = NIL then
-        Errormsg.error pos
+        error pos
         "initializing nil expressions not constrained by record type";
       {tenv=tenv; venv=S.enter id (E.VarEntry {ty=ty}) venv}
     | Some (typ', p) ->
@@ -341,10 +346,10 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
           match dty with
           | RECORD _ -> ()
           | _ ->
-            Errormsg.error pos
+            error pos
             "initializing nil expressions not constrained by record type"
         else
-          Errormsg.error pos "error : type constraint and init value differ";
+          error pos "type constraint and init value differ";
       {tenv=tenv; venv=S.enter id (E.VarEntry {ty=dty}) venv})
 
   | A.TypeDec decs ->
@@ -353,7 +358,7 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
     let names = List.map (fun ({name;pos;_} : A.typedec) -> (name, pos)) decs in
     (match check_dup names with
     | Error pos ->
-      Errormsg.error pos "error : types with the same name in the same batch of mutually recursive types";
+      error pos "types with the same name in the same batch of mutually recursive types";
       {venv=venv;tenv=tenv}
     | Ok () ->
 
@@ -401,7 +406,7 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
     let names = List.map (fun ({name;pos;_} : A.fundec) -> (name, pos)) decs in
     (match check_dup names with
     | Error pos ->
-      Errormsg.error pos "error : functions with the same name in the same batch of mutually recursive functions";
+      error pos "functions with the same name in the same batch of mutually recursive functions";
       {venv=venv;tenv=tenv}
     | Ok () ->
 
@@ -441,10 +446,10 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
       match result with
       | None ->
         if inferrty != UNIT then
-          Errormsg.error pos "error : procedure returns value";
+          error pos "procedure returns value";
       | Some (rsym, p) ->
         if (tlook tenv rsym p) != inferrty then
-          Errormsg.error p ("mismatched result type: " ^ (S.name rsym))
+          error p ("mismatched result type: " ^ (S.name rsym))
     in
 
     (* traverse all fundecs' body for type-checking *)
