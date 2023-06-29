@@ -334,7 +334,6 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
           Errormsg.error pos "error : type constraint and init value differ";
       {tenv=tenv; venv=S.enter id (E.VarEntry {ty=dty}) venv})
 
-  (* TODO check mutually recursive types that do not pass through record : test16 *)
   | A.TypeDec decs ->
 
     (* check name duplication *)
@@ -381,9 +380,12 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
 
     (* map dec with actual_ty of it in tenv' *)
     let mapentry tenv ({name;pos;_} : A.typedec) : tenv =
-      print_endline (S.name name);
       let ty = actual_ty (tlook tenv' name pos) pos in
-      print_endline (T.format ty);
+      (try
+        let _ = Sys.getenv "DEBUG" in
+        print_endline (S.name name);
+        print_endline (T.format ty)
+      with Not_found -> ());
       S.enter name ty tenv
     in
 
