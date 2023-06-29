@@ -17,5 +17,5 @@ let rec format = function
 | INT -> "int"
 | STRING -> "string"
 | ARRAY (ty, _) -> "[" ^ (format ty) ^ "]"
-| NAME _ -> "name"
+| NAME (a, _) -> "name#" ^ (Symbol.name a)
 | UNIT -> "unit"

@@ -29,6 +29,11 @@ let check_int {exp=_; ty=ty} pos =
   | T.INT -> ()
   | _ -> Errormsg.error pos "error : integer required"
 
+let is_name (ty : T.ty) : bool =
+  match ty with
+  | NAME _ -> true
+  | _ -> false
+
 let actual_ty (ty : T.ty) : T.ty =
   match ty with
   (* name type : return its content *)
@@ -305,7 +310,7 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
         "initializing nil expressions not constrained by record type";
       {tenv=tenv; venv=S.enter id (E.VarEntry {ty=ty}) venv}
     | Some (typ', p) ->
-      let dty = tlook tenv typ' p in
+      let dty = ref (tlook tenv typ' p) in
       if dty != ty then
         if ty = NIL then
           match dty with
