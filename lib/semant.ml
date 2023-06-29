@@ -34,26 +34,36 @@ let is_name (ty : T.ty) : bool =
   | NAME _ -> true
   | _ -> false
 
-let actual_ty (ty : T.ty) : T.ty =
-  match ty with
-  (* name type : return its content *)
-  | NAME (_, {contents=Some t}) ->
-    t
+let actual_ty (ty : T.ty) (pos : Lexing.position) : T.ty =
+  (* symbol set marking whether symbol is visited *)
+  let module SymbolSet = Set.Make (
+    struct
+      type t = Symbol.symbol
+      let compare a b = compare (snd a) (snd b)
+    end
+  ) in
 
-  | NAME (_, {contents=None}) ->
-    Errormsg.impossible "an empty name type"; UNIT
+  (* reduce if ty is NAME and not visited *)
+  (* cycle is detected if a NAME is visited *)
+  let rec trty (set : SymbolSet.t) (ty : T.ty) : T.ty =
+    match ty with
+    (* name type : return its content *)
+    | NAME (sym, {contents=Some t}) ->
+      if SymbolSet.mem sym set then (
+        Errormsg.error pos
+          "error: mutually recursive types that do not pass through record or array";
+        UNIT
+      ) else
+        trty (SymbolSet.add sym set) t
 
-  (* compound type : recursively traverse *)
-  (*
-  | RECORD (sts, unique) ->
-    RECORD (List.map (fun (s, t) -> (s, actual_ty t)) sts, unique)
+    | NAME (_, {contents=None}) ->
+      Errormsg.impossible "an empty name type"; UNIT
 
-  | ARRAY (ty, unique) ->
-    ARRAY ((actual_ty ty), unique)
-  *)
+    (* other type : return itself *)
+    | _ -> ty
+  in
+  trty SymbolSet.empty ty
 
-  (* other type : return itself *)
-  | _ -> ty
 
 let rec trans_prog (exp : A.exp) : unit =
   let _ = trans_exp E.base_venv E.base_tenv exp in
@@ -245,10 +255,10 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     let {ty=size_ty;_} = trexp size in
     if size_ty != INT then
       Errormsg.error pos "Array size must has type int.";
-    let aty = actual_ty (tlook tenv typ pos) in
+    let aty = tlook tenv typ pos in
     let ety =
       match aty with
-      | ARRAY (t, _) -> actual_ty t
+      | ARRAY (t, _) -> actual_ty t pos
       | _ ->
         Errormsg.error pos ("Type " ^ (S.name typ) ^ " is not an array type.");
         UNIT in
@@ -262,7 +272,9 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     | A.SimpleVar (id, pos) -> (
       match S.look venv id with
       | Some (E.VarEntry {ty=ty}) ->
-        {exp=(); ty=actual_ty ty}
+        (*{exp=(); ty=actual_ty ty pos}*)
+        (* because trans_dec now iter decs with actual_ty, ty not necessarily recheck *)
+        {exp=(); ty=ty}
       | None -> 
         Errormsg.error pos ("error: undeclared variable " ^ (S.name id));
         {exp=(); ty=T.UNIT}
@@ -370,7 +382,7 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
     (* map dec with actual_ty of it in tenv' *)
     let mapentry tenv ({name;pos;_} : A.typedec) : tenv =
       print_endline (S.name name);
-      let ty = tlook tenv' name pos |> actual_ty in
+      let ty = actual_ty (tlook tenv' name pos) pos in
       print_endline (T.format ty);
       S.enter name ty tenv
     in
