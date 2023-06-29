@@ -12,7 +12,7 @@ type ty =
 let rec format = function
 | RECORD (sym_ty_list, _) ->
   let fmt (sym, ty) = (Symbol.name sym) ^ " : " ^ (format ty) in
-  "{" ^ (List.fold_left (fun acc a -> acc ^ "; " ^ (fmt a)) "" sym_ty_list) ^ "}"
+  "{" ^ (List.fold_left (fun acc a -> acc ^ (fmt a)) "" sym_ty_list ^ "; ") ^ "}"
 | NIL -> "nil"
 | INT -> "int"
 | STRING -> "string"
