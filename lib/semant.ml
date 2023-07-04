@@ -217,7 +217,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
   | A.AssignExp {var;exp;pos} ->
     let {ty=varty;_} = trvar var in
     let {ty=expty;_} = trexp exp in
-    if varty != expty then (
+    if not (T.equal varty expty) then (
       if expty = NIL then
         match varty with
         | RECORD _ -> ()
@@ -229,13 +229,13 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
 
   | A.IfExp {test;then';else';pos} ->
     let {ty=test_ty;_} = trexp test in
-    if test_ty != INT then
+    if test_ty <> INT then
       error pos "test expression must has type int";
     let {ty=then_ty;_} = trexp then' in
     let ty =
       match else' with
       | None ->
-        if then_ty != UNIT then
+        if then_ty <> UNIT then
           error pos "if-then returns non unit";
         T.UNIT
       | Some else'' -> (
@@ -251,17 +251,17 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
 
   | A.WhileExp {test;body;pos} ->
     let {ty=test_ty;_} = trexp test in
-    if test_ty != INT then
+    if test_ty <> INT then
       error pos "test expression must has type int";
     let {ty=body_ty;_} = trexp body in
-    if body_ty != UNIT then
+    if body_ty <> UNIT then
       error pos "body of while not unit";
     {exp=(); ty=UNIT}
 
   | A.ForExp {var;lo;hi;body;pos;_} ->
     let {ty=lo_ty;_} = trexp lo in
     let {ty=hi_ty;_} = trexp hi in
-    if lo_ty != INT || hi_ty != INT then
+    if lo_ty <> INT || hi_ty <> INT then
       error pos "for-loop range must has type int";
     let venv' = S.enter var (E.VarEntry {ty=INT}) venv in
     let _ = trans_exp venv' tenv body in
@@ -278,7 +278,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
 
   | A.ArrayExp {typ;size;init;pos} ->
     let {ty=size_ty;_} = trexp size in
-    if size_ty != INT then
+    if size_ty <> INT then
       error pos "array size must has type int";
     let aty = tlook tenv typ pos in
     let ety =
@@ -288,7 +288,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
         error pos ("type " ^ (S.name typ) ^ " is not an array type");
         UNIT in
     let {ty=init_ty;_} = trexp init in
-    if ety != init_ty then
+    if not (T.equal ety init_ty) then
       error pos "initializing exp and array type differ";
     {exp=();ty=aty} 
 
@@ -323,7 +323,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       {exp=(); ty=fieldty}
     | A.SubscriptVar (v, exp, pos) -> (
       let {ty=index_ty;_} = trexp exp in
-      if index_ty != INT then
+      if index_ty <> INT then
         error pos "array must be indexed with int";
       let {ty;_} = trvar v in
       match ty with
@@ -348,7 +348,7 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
       {tenv=tenv; venv=S.enter id (E.VarEntry {ty=ty}) venv}
     | Some (typ', p) ->
       let dty = tlook tenv typ' p in
-      if dty != ty then
+      if not (T.equal dty ty) then
         if ty = NIL then
           match dty with
           | RECORD _ -> ()
@@ -381,7 +381,7 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
       let r : T.ty option ref =
         match tlook tenv name pos with
         | T.NAME (s, r) ->
-          if s != name then
+          if s <> name then
             Errormsg.impossible "different symbols in key-value pair";
           r
         | _ ->
@@ -452,10 +452,10 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
       (* compare inferred type with annotated type *)
       match result with
       | None ->
-        if inferrty != UNIT then
+        if inferrty <> UNIT then
           error pos "procedure returns value";
       | Some (rsym, p) ->
-        if (tlook tenv rsym p) != inferrty then
+        if not (T.equal (tlook tenv rsym p) inferrty) then
           error p ("mismatched result type: " ^ (S.name rsym))
     in
 
