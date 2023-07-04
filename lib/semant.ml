@@ -109,7 +109,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       | _ -> ([], T.UNIT) in
     let trformal (arg : A.exp) =
       (trans_exp venv tenv arg).ty in
-    print_endline (string_of_int (List.length args));
+    (*print_endline (string_of_int (List.length args));*)
     let arg_tys =
       List.map trformal args in
     (* if formal_tys = arg_tys then *)
