@@ -109,9 +109,16 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       | _ -> ([], T.UNIT) in
     let trformal (arg : A.exp) =
       (trans_exp venv tenv arg).ty in
+    print_endline (string_of_int (List.length args));
     let arg_tys =
       List.map trformal args in
-    if formal_tys = arg_tys then
+    (* if formal_tys = arg_tys then *)
+    let rec eq a b =
+      match (a, b) with
+      | ((ah :: ar), (bh :: br)) ->
+        T.equal ah bh && eq ar br
+      | _ -> false in
+    if eq formal_tys arg_tys then
       {exp=();ty=result_ty}
     else (
       let formal_len = List.length formal_tys in
@@ -233,7 +240,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
         T.UNIT
       | Some else'' -> (
         let {ty=else_ty;_} = trexp else'' in
-          if else_ty = then_ty then
+          if T.equal else_ty then_ty then
             then_ty
           else (
             error pos "types of then - else differ";
