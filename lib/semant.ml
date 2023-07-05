@@ -124,7 +124,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       List.map trargs args in
 
     (* check if two ty list is equal *)
-    let rec eq a b =
+    let rec eq (a : T.tylist) (b : T.tylist) =
       match (a, b) with
       | ([], []) -> true
       | ((ah :: ar), (bh :: br)) ->
@@ -132,7 +132,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
          *   print_endline ("formal ty: " ^ T.show_ty ah);
          *   print_endline ("arg ty: " ^ T.show_ty bh)
          * end; *)
-        ah == bh && eq ar br (* physical equality because ty comes from tenv *)
+        T.eq ah bh && eq ar br (* physical equality because ty comes from tenv *)
       | _ -> false in
 
     (* if equal returns expty *)
@@ -246,7 +246,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
   | A.AssignExp {var;exp;pos} ->
     let {ty=varty;_} = trvar var in
     let {ty=expty;_} = trexp exp in
-    if not (T.equal varty expty) then (
+    if not (T.eq varty expty) then (
       if expty = NIL then
         match varty with
         | RECORD _ -> ()
@@ -269,7 +269,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
         T.UNIT
       | Some else'' -> (
         let {ty=else_ty;_} = trexp else'' in
-          if T.equal else_ty then_ty then
+          if T.eq else_ty then_ty then
             then_ty
           else (
             error pos "types of then - else differ";
@@ -317,7 +317,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
         error pos ("type " ^ (S.name typ) ^ " is not an array type");
         UNIT in
     let {ty=init_ty;_} = trexp init in
-    if not (T.equal ety init_ty) then
+    if not (T.eq ety init_ty) then
       error pos "initializing exp and array type differ";
     {exp=();ty=aty} 
 
@@ -491,7 +491,7 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
         if inferrty <> UNIT then
           error pos "procedure returns value";
       | Some (rsym, p) ->
-        if not (T.equal (tlook tenv rsym p) inferrty) then
+        if not (T.eq (tlook tenv rsym p) inferrty) then
           error p ("mismatched result type: " ^ (S.name rsym))
     in
 
