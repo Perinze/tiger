@@ -342,17 +342,22 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
   (* print_endline "trans_dec"; *)
   (* print_endline (A.show_dec dec); *)
   match dec with
-  | A.VarDec {name=id;typ;init;pos;_} ->
+
+  (* name : symbol
+   * typ : (symbol * pos) option
+   * init : exp *)
+  | A.VarDec {name;typ;init;pos;_} ->
+
     let {exp=_;ty=ty} = trans_exp venv tenv init in
     (match typ with
     | None ->
       if ty = NIL then
         error pos
         "initializing nil expressions not constrained by record type";
-      {tenv=tenv; venv=S.enter id (E.VarEntry {ty=ty}) venv}
+      {tenv=tenv; venv=S.enter name (E.VarEntry {ty=ty}) venv}
     | Some (typ', p) ->
       let dty = tlook tenv typ' p in
-      if not (T.equal dty ty) then
+      if dty != ty then
         if ty = NIL then
           match dty with
           | RECORD _ -> ()
@@ -361,7 +366,7 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
             "initializing nil expressions not constrained by record type"
         else
           error pos "type constraint and init value differ";
-      {tenv=tenv; venv=S.enter id (E.VarEntry {ty=dty}) venv})
+      {tenv=tenv; venv=S.enter name (E.VarEntry {ty=dty}) venv})
 
   | A.TypeDec decs ->
 
