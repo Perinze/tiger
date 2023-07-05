@@ -334,22 +334,38 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
         {exp=(); ty=T.UNIT}
       | _ -> raise (NotImplemented "simple var for function")
     )
-    | A.FieldVar (v, id, pos) ->
-      let {ty;_} = trvar v in
-      let fields =
+
+    (* record_exp : var
+     * field_name : symbol *)
+    | A.FieldVar (record_exp, field_name, pos) ->
+      (* traverse record_exp to ty *)
+      let {ty;_} = trvar record_exp in
+      (* check record type, and extract its fields *)
+      let fields : (S.symbol * T.ty) list =
         match ty with
         | RECORD (sym_ty_list, _) -> sym_ty_list
         | _ ->
-          error pos "variable not record";
+          error pos "error : variable is not a record, cannot access its field";
           [] in
-      let pred (sym, _) = sym = id in
-      let fieldty =
+      (* find field_name in fields : (symbol * ty) list *)
+      let pred (sym, _) = sym = field_name in
+      (* fieldty holds type of that field *)
+      let fieldty = actual_ty (
         match List.find_opt pred fields with
         | Some (_, ty) -> ty
         | None ->
-          error pos ("field " ^ S.name id ^ " not in record type");
-          UNIT in
+          error pos ("field " ^ S.name field_name ^ " not in record type");
+          UNIT
+      ) pos in
+      (* if (S.name id) = "rest" then begin
+       *   print_endline "field is rest";
+       *   match fieldty with
+       *   | RECORD _ -> print_endline "is a record"
+       *   | NAME _ -> print_endline "is a name"
+       *   | _ -> ()
+       * end; *)
       {exp=(); ty=fieldty}
+
     | A.SubscriptVar (v, exp, pos) -> (
       let {ty=index_ty;_} = trexp exp in
       if index_ty <> INT then
