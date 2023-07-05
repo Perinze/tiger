@@ -128,7 +128,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       match (a, b) with
       | ([], []) -> true
       | ((ah :: ar), (bh :: br)) ->
-        (* if ah != bh then begin
+        (* if T.neq ah bh then begin
          *   print_endline ("formal ty: " ^ T.show_ty ah);
          *   print_endline ("arg ty: " ^ T.show_ty bh)
          * end; *)
@@ -155,7 +155,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
     if oper == A.EqOp || oper == A.NeqOp then begin
       let {ty=left_ty;_} = trexp left in
       let {ty=right_ty;_} = trexp right in
-      if left_ty != right_ty then
+      if not (T.eq left_ty right_ty) then
         Errormsg.error pos "error : comparing equality between different types";
       (*  "\n(n)eq exp: " ^ (A.show_exp exp) ^ *)
       (*  "\nleft ty: " ^ (T.show_ty left_ty) ^ *)
@@ -384,7 +384,7 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
       {tenv=tenv; venv=S.enter name (E.VarEntry {ty=ty}) venv}
     | Some (typ', p) ->
       let dty = tlook tenv typ' p in
-      if dty != ty then
+      if T.neq dty ty then
         if ty = NIL then
           match dty with
           | RECORD _ -> ()

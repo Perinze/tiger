@@ -38,6 +38,8 @@ let eq (a : ty) (b : ty) : bool =
   | (UNIT, UNIT) -> true
   | _ -> false
 
+let neq (a : ty) (b : ty) : bool = not (eq a b)
+
 (*
 let rec format = function
 | RECORD (sym_ty_list, _) ->
