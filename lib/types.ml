@@ -1,4 +1,4 @@
-type unique = unit ref
+type unique = unit ref [@@deriving show]
 
 type ty =
 | RECORD of (Symbol.symbol * ty) list * unique
@@ -8,7 +8,9 @@ type ty =
 | ARRAY of ty * unique
 | NAME of Symbol.symbol * ty option ref (* place holder for recursion *)
 | UNIT
+[@@deriving show]
 
+(*
 let rec format = function
 | RECORD (sym_ty_list, _) ->
   let fmt (sym, ty) = (Symbol.name sym) ^ " : " ^ (format ty) in
@@ -19,3 +21,4 @@ let rec format = function
 | ARRAY (ty, _) -> "[" ^ (format ty) ^ "]"
 | NAME (a, _) -> "name#" ^ (Symbol.name a)
 | UNIT -> "unit"
+*)

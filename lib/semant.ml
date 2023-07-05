@@ -86,6 +86,8 @@ let rec trans_prog (exp : A.exp) : unit =
   ()
 
 and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty = 
+  (* print_endline "trans_exp"; *)
+  (* print_endline (A.show_exp exp); *)
   let rec trexp = function
   | A.DummyExp -> {exp=(); ty=UNIT}
   | A.VarExp v -> trvar v
@@ -330,6 +332,8 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
 
 
 and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
+  (* print_endline "trans_dec"; *)
+  (* print_endline (A.show_dec dec); *)
   match dec with
   | A.VarDec {name=id;typ;init;pos;_} ->
     let {exp=_;ty=ty} = trans_exp venv tenv init in
@@ -393,7 +397,7 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
       (try
         let _ = Sys.getenv "DEBUG" in
         print_endline (S.name name);
-        print_endline (T.format ty)
+        print_endline (T.show_ty ty)
       with Not_found -> ());
       S.enter name ty tenv
     in

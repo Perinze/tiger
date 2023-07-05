@@ -1,4 +1,4 @@
-type symbol = string * int
+type symbol = string * int [@@deriving show]
 
 module H = Hashtbl
 
