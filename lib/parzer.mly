@@ -167,19 +167,21 @@ params:
   | exp COMMA params { $1 :: $3 }
 ;
 
-op:
-    PLUS { PlusOp }
-  | MINUS { MinusOp }
-  | TIMES { TimesOp }
-  | DIVIDE { DivideOp }
-  | EQ { EqOp }
-  | NEQ { NeqOp }
-  | GT { GtOp }
-  | LT { LtOp }
-  | GE { GeOp }
-  | LE { LeOp }
-  | AND { TimesOp }
-  | OR { PlusOp }
+opexp:
+    exp PLUS exp   { OpExp { left=$1; right=$3; pos=rhs_start_pos 2; oper=PlusOp } }
+  | exp MINUS exp  { OpExp { left=$1; right=$3; pos=rhs_start_pos 2; oper=MinusOp } }
+  | exp TIMES exp  { OpExp { left=$1; right=$3; pos=rhs_start_pos 2; oper=TimesOp } }
+  | exp DIVIDE exp { OpExp { left=$1; right=$3; pos=rhs_start_pos 2; oper=DivideOp } }
+  | exp EQ exp     { OpExp { left=$1; right=$3; pos=rhs_start_pos 2; oper=EqOp } }
+  | exp NEQ exp    { OpExp { left=$1; right=$3; pos=rhs_start_pos 2; oper=NeqOp } }
+  | exp GT exp     { OpExp { left=$1; right=$3; pos=rhs_start_pos 2; oper=GtOp } }
+  | exp LT exp     { OpExp { left=$1; right=$3; pos=rhs_start_pos 2; oper=LtOp } }
+  | exp GE exp     { OpExp { left=$1; right=$3; pos=rhs_start_pos 2; oper=GeOp } }
+  | exp LE exp     { OpExp { left=$1; right=$3; pos=rhs_start_pos 2; oper=LeOp } }
+  | exp AND exp    { OpExp { left=$1; right=$3; pos=rhs_start_pos 2; oper=TimesOp } }
+  | exp OR exp     { OpExp { left=$1; right=$3; pos=rhs_start_pos 2; oper=PlusOp } }
+/*| op exp { error 1 "missing left operand"; DummyExp }
+  | exp op { error 2 "missing right operand"; DummyExp }*/
 ;
 
 /* type-id {id=exp{, id=exp}} */
@@ -252,14 +254,7 @@ exp:
   | ID LPAREN error RPAREN { error 3 "argument syntax error"; DummyExp }
   | ID LPAREN error { error 2 "unmatched parentheses"; DummyExp }
   | ID error RPAREN { error 3 "unmatched parentheses"; DummyExp }
-  | exp op exp {
-      OpExp {
-        left=$1; oper=$2;
-        right=$3; pos=rhs_start_pos 2;
-      }
-    }
-  | op exp { error 1 "missing left operand"; DummyExp }
-  | exp op { error 2 "missing right operand"; DummyExp }
+  | opexp { $1 }
   | record_creation { $1 }
   | array_creation { $1 }
   | lvalue ASSIGN exp {

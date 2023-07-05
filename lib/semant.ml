@@ -151,9 +151,19 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
       {exp=();ty=UNIT}
     )
 
-  | A.OpExp {left;right;pos;_} ->
-    check_int (trexp left) pos;
-    check_int (trexp right) pos;
+  | A.OpExp {oper;left;right;pos} ->
+    if oper == A.EqOp || oper == A.NeqOp then begin
+      let {ty=left_ty;_} = trexp left in
+      let {ty=right_ty;_} = trexp right in
+      if left_ty != right_ty then
+        Errormsg.error pos "error : comparing equality between different types";
+      (*  "\n(n)eq exp: " ^ (A.show_exp exp) ^ *)
+      (*  "\nleft ty: " ^ (T.show_ty left_ty) ^ *)
+      (*  "\nright ty: " ^ (T.show_ty right_ty)); *)
+    end else begin
+      check_int (trexp left) pos;
+      check_int (trexp right) pos;
+    end;
     {exp=(); ty=T.INT}
 
   | A.RecordExp {fields=args;typ;pos;_} ->
