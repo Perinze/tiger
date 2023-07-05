@@ -97,31 +97,48 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
   | A.StringExp (_, _) ->
     {exp=(); ty=T.STRING}
 
+  (* func : symbol
+   * args : exp list *)
   | A.CallExp {func;args;pos} ->
-    let func' = vlook venv func pos in
-    let func'' =
+    (* look up entry in venv *)
+    let func' : E.enventry = vlook venv func pos in
+
+    (* check if func' is a FunEntry *)
+    let func'' : E.enventry =
       match func' with
-      | FunEntry _ ->
-        func'
-      | _ -> error pos ("not a function: " ^ (S.name func));
-        DummyEntry in
-    let (formal_tys, result_ty) =
+      | FunEntry _ -> func'
+      | _ -> error pos ("not a function: " ^ (S.name func)); DummyEntry in
+
+    (* extract tys of formals and result *)
+    let (formal_tys, result_ty) : T.ty list * T.ty =
       match func'' with
       | FunEntry {formals=formals;result=rt} -> (formals, rt)
       | _ -> ([], T.UNIT) in
-    let trformal (arg : A.exp) =
+
+    (* function converting arg exp to its ty *)
+    let trargs (arg : A.exp) : T.ty =
       (trans_exp venv tenv arg).ty in
-    (*print_endline (string_of_int (List.length args));*)
+
+    (* tys of args *)
     let arg_tys =
-      List.map trformal args in
-    (* if formal_tys = arg_tys then *)
+      List.map trargs args in
+
+    (* check if two ty list is equal *)
     let rec eq a b =
       match (a, b) with
+      | ([], []) -> true
       | ((ah :: ar), (bh :: br)) ->
-        T.equal ah bh && eq ar br
+        (* if ah != bh then begin
+         *   print_endline ("formal ty: " ^ T.show_ty ah);
+         *   print_endline ("arg ty: " ^ T.show_ty bh)
+         * end; *)
+        ah == bh && eq ar br (* physical equality because ty comes from tenv *)
       | _ -> false in
+
+    (* if equal returns expty *)
     if eq formal_tys arg_tys then
       {exp=();ty=result_ty}
+    (* report error msg depending on length difference *)
     else (
       let formal_len = List.length formal_tys in
       let arg_len = List.length arg_tys in

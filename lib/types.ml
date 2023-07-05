@@ -10,6 +10,9 @@ type ty =
 | UNIT
 [@@deriving show]
 
+type tylist = ty list [@@deriving show]
+
+(* maybe useless *)
 let rec equal (a : ty) (b : ty) : bool =
   match (a, b) with
   | (RECORD (a_fields, a_unique), RECORD (b_fields, b_unique)) ->
