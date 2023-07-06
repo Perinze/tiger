@@ -337,9 +337,9 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
 
     (* record_exp : var
      * field_name : symbol *)
-    | A.FieldVar (record_exp, field_name, pos) ->
+    | A.FieldVar (record_var, field_name, pos) ->
       (* traverse record_exp to ty *)
-      let {ty;_} = trvar record_exp in
+      let {ty;_} = trvar record_var in
       (* check record type, and extract its fields *)
       let fields : (S.symbol * T.ty) list =
         match ty with
