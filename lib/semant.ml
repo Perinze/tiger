@@ -345,7 +345,7 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
         match ty with
         | RECORD (sym_ty_list, _) -> sym_ty_list
         | _ ->
-          error pos "error : variable is not a record, cannot access its field";
+          error pos "variable is not a record, cannot access its field";
           [] in
       (* find field_name in fields : (symbol * ty) list *)
       let pred (sym, _) = sym = field_name in
