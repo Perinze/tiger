@@ -10,6 +10,29 @@ type ty =
 | UNIT
 [@@deriving show]
 
+let pp_ty (ppf : Format.formatter) (ty : ty) : unit =
+  let weak (ty : ty) : string =
+    match ty with
+    | RECORD _ -> "RECORD"
+    | NIL -> "NIL"
+    | INT -> "INT"
+    | STRING -> "STRING"
+    | ARRAY _ -> "ARRAY"
+    | NAME _ -> "NAME"
+    | UNIT -> "UNIT"
+  in
+  Format.pp_print_string ppf (
+    match ty with
+    | RECORD (sym_ty_list, _) -> "{" ^
+      (List.fold_left
+        (fun acc (sym, ty) -> acc ^ (Symbol.name sym) ^ ":" ^ (weak ty))
+        ""
+        sym_ty_list) ^
+      "}"
+    | ARRAY (ty, _) -> ("[" ^ weak ty ^ "]")
+    | _ -> weak ty
+  )
+
 type tylist = ty list [@@deriving show]
 
 let eq (a : ty) (b : ty) : bool =

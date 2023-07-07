@@ -337,9 +337,11 @@ and trans_exp (venv : venv) (tenv : tenv) (exp : A.exp) : expty =
 
     (* record_exp : var
      * field_name : symbol *)
-    | A.FieldVar (record_exp, field_name, pos) ->
+    | A.FieldVar (record_var, field_name, pos) ->
       (* traverse record_exp to ty *)
-      let {ty;_} = trvar record_exp in
+      let {ty=ty';_} = trvar record_var in
+      let ty = actual_ty ty' pos in
+      (* ("field " ^ T.show_ty ty) |> print_endline; *)
       (* check record type, and extract its fields *)
       let fields : (S.symbol * T.ty) list =
         match ty with
@@ -397,6 +399,7 @@ and trans_dec (venv : venv) (tenv : tenv) (dec : A.dec) : env =
       if ty = NIL then
         error pos
         "initializing nil expressions not constrained by record type";
+      (* ("ty output " ^ T.show_ty ty) |> print_endline; *)
       {tenv=tenv; venv=S.enter name (E.VarEntry {ty=ty}) venv}
     | Some (typ', p) ->
       let dty = tlook tenv typ' p in
