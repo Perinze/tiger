@@ -1,6 +1,6 @@
 type access =
-| InReg of Temp.temp
-| InFrame of int
+| ByValue of Temp.temp
+| ByRef of Temp.temp
 
 type frame = {
   name : Temp.label;
@@ -13,9 +13,9 @@ let new_frame (name : Temp.label) (escapes : bool list) : frame =
   let f escape : access =
     i := !i + 1;
     if escape then
-      InFrame (!i * 4) (* offset by 1 because stack *)
+      ByRef (Temp.newtemp ())
     else
-      InReg (Temp.newtemp ())
+      ByValue (Temp.newtemp ())
   in
   {name=name;formals=List.rev (List.map f escapes);locals=ref 0}
 
@@ -27,7 +27,7 @@ let formals (frame : frame) : access list =
 
 let alloc_local ({locals;_} : frame) (escape : bool) : access =
   match escape with
-  | false -> InReg (Temp.newtemp ())
+  | false -> ByValue (Temp.newtemp ())
   | true ->
       locals := !locals + 1;
-      InFrame (!locals * -4)
+      ByRef (Temp.newtemp ())
